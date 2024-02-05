@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau de Bord Admin - AccordEnergie</title>
+    <link rel="stylesheet" href="/css/admin_dashboard.css">
+</head>
+<body>
+    <h1>Tableau de Bord Admin</h1>
+    <section>
+        <h2>Gestion des Interventions</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Description</th>
+                    <th>Client</th>
+                    <th>Intervenant</th>
+                    <th>Status</th>
+                    <th>Urgence</th>
+                    <th>Date Planifiée</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for intervention in interventions %}
+                <tr>
+                    <td>{{ intervention.title }}</td>
+                    <td>{{ intervention.description }}</td>
+                    <td>{{ intervention.client_id }}</td>
+                    <td>{{ intervention.intervenant_id }}</td>
+                    <td>{{ intervention.status }}</td>
+                    <td>{{ intervention.urgency_level }}</td>
+                    <td>{{ intervention.date_planned }}</td>
+                    <td>
+                        <a href="../classes/edit_intervention.php?id={{ intervention.intervenant_id }}">Edit</a>
+                        <a href="delete_intervention.php?id={{ intervention.id }}">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Gestion des Utilisateurs</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nom d'utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role_id }}</td>
+                    <td>
+                        <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
+                        <a href="delete_user.php?id={{ user.id }}">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <footer>
+        <p>Tableau de bord admin pour la gestion d'AccordEnergie.</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau de Bord Client - AccordEnergie</title>
+    <link rel="stylesheet" href="/css/admin_dashboard.css">
+</head>
+<body>
+    <h1>Tableau de Bord Client</h1>
+    <section>
+        <h2>Vos Interventions</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Urgence</th>
+                    <th>Date Planifiée</th>
+                    <th>Commentaires</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for intervention in interventions %}
+                <tr>
+                    <td>{{ intervention.title }}</td>
+                    <td>{{ intervention.description }}</td>
+                    <td>{{ intervention.status }}</td>
+                    <td>{{ intervention.urgency_level }}</td>
+                    <td>{{ intervention.date_planned }}</td>
+                    <td>
+                        <button onclick="openCommentModal({{ intervention.intervention_id }})">Voir / Ajouter Commentaire</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <div id="comment-modal" style="display:none;">
+        <h3>Ajouter un Commentaire</h3>
+        <form id="comment-form" action="post_comment.php" method="post">
+            <input type="hidden" id="intervention-id" name="intervention_id">
+            <textarea id="comment-content" name="content" placeholder="Votre commentaire"></textarea>
+            <button type="submit">Envoyer le commentaire</button>
+        </form>
+    </div>
+
+    <script>
+        function openCommentModal(interventionId) {
+            document.getElementById('intervention-id').value = interventionId;
+            document.getElementById('comment-modal').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

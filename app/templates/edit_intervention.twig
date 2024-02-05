@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Modifier l'Intervention - AccordEnergie</title>
+    <!-- Lien vers votre CSS -->
+</head>
+<body>
+    <h1>Modifier l'Intervention</h1>
+    <form action="edit_intervention.php?id={{ interventionId }}" method="post">
+        <label for="title">Titre:</label>
+        <input type="text" id="title" name="title" value="{{ intervention.title }}" required>
+        
+        <label for="description">Description:</label>
+        <textarea id="description" name="description" required>{{ intervention.description }}</textarea>
+        
+        <label for="status">Statut:</label>
+        <input type="text" id="status" name="status" value="{{ intervention.status }}" required>
+        
+        <label for="urgency_level">Niveau d'urgence:</label>
+        <input type="text" id="urgency_level" name="urgency_level" value="{{ intervention.urgency_level }}" required>
+        
+        <label for="date_planned">Date Planifiée:</label>
+        <input type="datetime-local" id="date_planned" name="date_planned" value="{{ intervention.date_planned }}" required>
+    
+        <button type="submit">Mettre à jour</button>
+    </form>
+</body>
+</html>

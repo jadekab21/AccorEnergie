@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Accueil - AccordEnergie{% endblock %}</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div id="form-container">
+        {% block content %}
+        <!-- Formulaire de Connexion -->
+        <form id="login-form" action="public/index.php" method="post">
+            <div>
+                <label for="login-username">Nom d'utilisateur:</label>
+                <input type="text" id="login-username" name="username" placeholder="Votre nom d'utilisateur" required>
+            </div>
+            <div>
+                <label for="login-password">Mot de passe:</label>
+                <input type="password" id="login-password" name="password" placeholder="Votre mot de passe" required>
+            </div>
+            <button type="submit">Se connecter</button>
+
+            <!-- Champs de connexion -->
+            <button type="button" onclick="showRegister()">Pas encore inscrit (e) ? S'inscrire</button>
+        </form>
+
+        <!-- Formulaire d'Inscription -->
+        <form id="register-form" action="../classes/register.php" method="post" style="display:none;">
+        <input type="hidden" name="form_type" value="submit">
+            <div>
+                <label for="register-username">Nom d'utilisateur:</label>
+                <input type="text" id="register-username" name="username" placeholder="Choisissez un nom d'utilisateur" required>
+            </div>
+            <div>
+                <label for="register-email">Email:</label>
+                <input type="email" id="register-email" name="email" placeholder="Entrez votre email" required>
+            </div>
+            <div>
+                <label for="register-password">Mot de passe:</label>
+                <input type="password" id="register-password" name="password" placeholder="Choisissez un mot de passe" required>
+            </div>
+            <button type="submit">S'inscrire</button>
+            <button type="button" onclick="showLogin()">Déjà inscrit ? Se connecter</button>
+        </form>
+        {% endblock %}
+    </div>
+
+    <script>
+        function showRegister() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+        }
+
+        function showLogin() {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+        }
+    </script>
+    {% if message %}
+    <div>{{ message|raw }}</div>
+{% endif %}
+
+</body>
+</html>

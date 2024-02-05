@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Tableau de Bord Intervenant - AccordEnergie</title>
+    <link rel="stylesheet" href="admin_dashboard.css">
+</head>
+<body>
+    <h1>Tableau de Bord Intervenant</h1>
+    <section>
+        <h2>Interventions Assignées</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Titre</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Urgence</th>
+                    <th>Date Planifiée</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for intervention in interventions %}
+                <tr>
+                    <td>{{ intervention.title }}</td>
+                    <td>{{ intervention.description }}</td>
+                    <td>{{ intervention.status }}</td>
+                    <td>{{ intervention.urgency_level }}</td>
+                    <td>{{ intervention.date_planned }}</td>
+                    <td>
+                        <button onclick="openUpdateSection({{ intervention.intervention_id }})">Mettre à jour</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <div id="update-section" style="display:none;">
+        <!-- Content for update section -->
+    </div>
+
+    <script>
+        // JavaScript functions
+    </script>
+</body>
+</html>
