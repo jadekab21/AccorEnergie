@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Tableau de Bord Intervenant - AccordEnergie</title>
-    <link rel="stylesheet" href="admin_dashboard.css">
+    <link rel="stylesheet"  href="/css/admin_dashboard.css">
 </head>
 <body>
     <h1>Tableau de Bord Intervenant</h1>
-    <section>
+     <div class="navigation">
+      <button id="btnGestionInterventions">Gestion des Interventions</button>
+    
+    </div>
+    <section id="gestionInterventions">
         <h2>Interventions Assignées</h2>
         <table border="1">
             <thead>
@@ -29,7 +33,7 @@
                     <td>{{ intervention.urgency_level }}</td>
                     <td>{{ intervention.date_planned }}</td>
                     <td>
-                        <button onclick="openUpdateSection({{ intervention.intervention_id }})">Mettre à jour</button>
+                          <a href="../classes/edit_intervention.php?id={{ intervention.intervention_id }}">Modifier</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -41,8 +45,23 @@
         <!-- Content for update section -->
     </div>
 
-    <script>
-        // JavaScript functions
+      <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var btnGestionInterventions = document.getElementById('btnGestionInterventions');
+         
+            var sectionGestionInterventions = document.getElementById('gestionInterventions');
+           
+
+            btnGestionInterventions.addEventListener('click', function() {
+                sectionGestionInterventions.style.display = 'block';
+                sectionGestionStatus.style.display = 'none';
+            });
+
+            btnGestionStatus.addEventListener('click', function() {
+                sectionGestionInterventions.style.display = 'none';
+           
+            });
+        });
     </script>
 </body>
 </html>
