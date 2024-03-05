@@ -7,23 +7,38 @@
 </head>
 <body>
     <h1>Modifier l'Intervention</h1>
-    <form action="edit_intervention.php?id={{ interventionId }}" method="post">
+    <form action="edit_intervention.php?id={{ intervention.intervention_id }}" method="post">
         <label for="title">Titre:</label>
         <input type="text" id="title" name="title" value="{{ intervention.title }}" required>
         
         <label for="description">Description:</label>
         <textarea id="description" name="description" required>{{ intervention.description }}</textarea>
-        
         <label for="status">Statut:</label>
-        <input type="text" id="status" name="status" value="{{ intervention.status }}" required>
-        
-        <label for="urgency_level">Niveau d'urgence:</label>
-        <input type="text" id="urgency_level" name="urgency_level" value="{{ intervention.urgency_level }}" required>
-        
-        <label for="date_planned">Date Planifiée:</label>
-        <input type="datetime-local" id="date_planned" name="date_planned" value="{{ intervention.date_planned }}" required>
-    
+<select id="status" name="status" required>
+    {% for status in statuses %}
+        <option value="{{ status.ids }}">{{ status.status }}</option>
+    {% endfor %}
+</select>
+
+      <!-- Dropdown pour sélectionner le niveau d'urgence -->
+<label for="urgency_level">Niveau d'urgence :</label>
+<select id="urgency_level" name="urgency_level" required>
+    {% for urgence in urgences %}
+        <!-- L'option est sélectionnée si elle correspond à l'urgence de l'intervention -->
+        <option value="{{ urgence.idu }}" {% if urgence.idu == intervention.idu %}selected{% endif %}>
+            {{ urgence.urgency_level }}
+        </option>
+    {% endfor %}
+</select>
+
+      <label for="date_planned">Date Planifiée:</label>
+     <input type="datetime-local" id="date_planned" name="date_planned" value="{{ intervention.date_planned|date('Y-m-d\\TH:i') }}" >
+
         <button type="submit">Mettre à jour</button>
     </form>
+    {% if message %}
+    <div>{{ message }}</div>
+{% endif %}
+
 </body>
 </html>
