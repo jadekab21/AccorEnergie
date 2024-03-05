@@ -4,39 +4,68 @@
     <meta charset="UTF-8">
     <title>Tableau de Bord Admin - AccordEnergie</title>
     <link rel="stylesheet" href="/css/admin_dashboard.css">
+    <script>
+        function sortTable(tableId, columnIndex) {
+            const table = document.getElementById(tableId);
+            const rows = Array.from(table.rows).slice(1); // Exclude the header row
+            const isNumericColumn = [2, 3, 4, 5, 6].includes(columnIndex);
+
+            rows.sort((a, b) => {
+                const aValue = isNumericColumn ? parseFloat(a.cells[columnIndex].innerText) : a.cells[columnIndex].innerText;
+                const bValue = isNumericColumn ? parseFloat(b.cells[columnIndex].innerText) : b.cells[columnIndex].innerText;
+                return aValue.localeCompare(bValue);
+            });
+
+            // Reverse the order if already sorted in the ascending order
+            if (table.lastSortedColumn === columnIndex && table.lastSortOrder === 'asc') {
+                rows.reverse();
+                table.lastSortOrder = 'desc';
+            } else {
+                table.lastSortOrder = 'asc';
+            }
+
+            table.lastSortedColumn = columnIndex;
+
+            // Rearrange rows in the table
+            for (let i = 0; i < rows.length; i++) {
+                table.appendChild(rows[i]);
+            }
+        }
+    </script>
 </head>
 <body>
     <h1>Tableau de Bord Admin</h1>
     <section>
         <h2>Gestion des Interventions</h2>
-        <table border="1">
+        <table border="1" id="interventionsTable">
             <thead>
                 <tr>
-                    <th>Titre</th>
-                    <th>Description</th>
-                    <th>Client</th>
-                    <th>Intervenant</th>
-                    <th>Status</th>
-                    <th>Urgence</th>
-                    <th>Date Planifiée</th>
+                    <th><button onclick="sortTable('interventionsTable', 0)">Titre</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 1)">Description</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 2)">Client</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 3)">Intervenant</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 4)">Status</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 5)">Urgence</button></th>
+                    <th><button onclick="sortTable('interventionsTable', 6)">Date Planifiée</button></th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
+                <!-- Votre code pour afficher les interventions -->
                 {% for intervention in interventions %}
-                <tr>
-                    <td>{{ intervention.title }}</td>
-                    <td>{{ intervention.description }}</td>
-                    <td>{{ intervention.client_id }}</td>
-                    <td>{{ intervention.intervenant_id }}</td>
-                    <td>{{ intervention.status }}</td>
-                    <td>{{ intervention.urgency_level }}</td>
-                    <td>{{ intervention.date_planned }}</td>
-                    <td>
-                        <a href="../classes/edit_intervention.php?id={{ intervention.intervenant_id }}">Edit</a>
-                        <a href="delete_intervention.php?id={{ intervention.id }}">Delete</a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ intervention.title }}</td>
+                        <td>{{ intervention.description }}</td>
+                        <td>{{ intervention.client_id }}</td>
+                        <td>{{ intervention.intervenant_id }}</td>
+                        <td>{{ intervention.status }}</td>
+                        <td>{{ intervention.urgency_level }}</td>
+                        <td>{{ intervention.date_planned }}</td>
+                        <td>
+                            <a href="../classes/edit_intervention.php?id={{ intervention.intervenant_id }}">Edit</a>
+                            <a href="delete_intervention.php?id={{ intervention.id }}">Delete</a>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -44,33 +73,29 @@
 
     <section>
         <h2>Gestion des Utilisateurs</h2>
-        <table border="1">
+        <table border="1" id="usersTable">
             <thead>
                 <tr>
-                    <th>Nom d'utilisateur</th>
-                    <th>Email</th>
-                    <th>Rôle</th>
+                    <th><button onclick="sortTable('usersTable', 0)">Nom d'utilisateur</button></th>
+                    <th><button onclick="sortTable('usersTable', 1)">Email</button></th>
+                    <th><button onclick="sortTable('usersTable', 2)">Rôle</button></th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
-                <tr>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.email }}</td>
-                    <td>{{ user.role_id }}</td>
-                    <td>
-                        <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
-                        <a href="delete_user.php?id={{ user.id }}">Delete</a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role_id }}</td>
+                        <td>
+                            <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
+                            <a href="delete_user.php?id={{ user.id }}">Delete</a>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </section>
-
-    <footer>
-        <p>Tableau de bord admin pour la gestion d'AccordEnergie.</p>
-    </footer>
 </body>
 </html>

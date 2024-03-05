@@ -1,57 +1,57 @@
 <?php
-// Inclure les dépendances Composer, y compris Twig
+
 require_once '../vendor/autoload.php';
+
+use App\Session;
+use App\Database;
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Configuration de la base de données
-$dbHost = "mysql"; // Utilisez l'hôte de votre base de données
-$dbUser = "root";  // Utilisez votre nom d'utilisateur de base de données
-$dbPassword = "";  // Utilisez votre mot de passe de base de données
-$dbName = "AccorEnergie"; // Utilisez votre nom de base de données
+$session = new Session();
+$db = new Database("mysql", "root", "", "AccorEnergie");
 
-// Établir la connexion à la base de données avec PDO
-try {
-    $conn = new PDO("mysql:host=$dbHost;dbname=$dbName", $dbUser, $dbPassword);
-    // Définir le mode d'erreur de PDO sur exception
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Échec de la connexion : " . $e->getMessage());
-}
-
-// Initialiser Twig
 $loader = new \Twig\Loader\FilesystemLoader('../templates');
 $twig = new \Twig\Environment($loader);
 
-// Gestion des formulaires
-$errorMessage = ""; // Initialisez la variable avant de l'utiliser
+$requestUri = $_SERVER['REQUEST_URI'];
 
-// Le reste de votre code reste inchangé...
+if (strpos($requestUri, '/classes/cancel_intervention.php') !== false) {
+    require '../classes/cancel_intervention.php';
+    exit;
+}
+if (strpos($requestUri, '/classes/edit_intervention.php') !== false) {
+    require '../classes/edit_intervention.php';
+    exit;
+}
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'create_intervention') {
+    require '../classes/create_intervention.php';
+    exit;
+}
+if (strpos($requestUri, '/classes/edit_user.php') !== false) {
+    require '../classes/edit_user.php';
+    exit;
+}
 
-// Utiliser PDO pour le traitement du formulaire de connexion
+$errorMessage = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['form_type']) && $_POST['form_type'] == 'submit') {
         require '../classes/register.php';
         exit;
     }
 
-    // Traitement du formulaire de connexion
     $username = $_POST['username'];
     $password = $_POST['password'];
-    
-    // Utiliser des requêtes préparées avec PDO
-    $stmt = $conn->prepare("SELECT u.user_id, u.password, r.role_name FROM Users u INNER JOIN Roles r ON u.role_id = r.role_id WHERE u.username = :username");
-    $stmt->bindParam(':username', $username);
-    $stmt->execute();
+
+    $stmt = $db->getPdo()->prepare("SELECT user_id, password, role_name FROM Users INNER JOIN Roles ON Users.role_id = Roles.role_id WHERE username = ?");
+    $stmt->execute([$username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['user_id'];
-        $_SESSION['role'] = $user['role_name'];
-        $stmt->closeCursor();
+        $session->add('user_id', $user['user_id']);
+        $session->add('role', $user['role_name']);
 
-        // Redirection en fonction du rôle
-        switch ($_SESSION['role']) {
+        switch ($session->get('role')) {
             case 'admin':
                 require '../classes/admin_dashboard.php';
                 break;
@@ -71,9 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     } else {
         $errorMessage = "Nom d'utilisateur ou mot de passe incorrect";
-        $stmt->closeCursor();
     }
 }
 
-// Affichage de la page de connexion par défaut
 echo $twig->render('index.html.twig', ['error' => $errorMessage]);

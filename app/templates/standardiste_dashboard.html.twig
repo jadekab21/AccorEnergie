@@ -4,37 +4,66 @@
     <meta charset="UTF-8">
     <title>Tableau de Bord Standardiste - AccordEnergie</title>
     <link rel="stylesheet" href="/css/admin_dashboard.css">
+    <script>
+        function sortTable(columnIndex) {
+            const table = document.getElementById("interventionsTable");
+            const rows = Array.from(table.rows).slice(1); // Exclude the header row
+            const isNumericColumn = [3, 4, 5].includes(columnIndex);
+
+            rows.sort((a, b) => {
+                const aValue = isNumericColumn ? parseFloat(a.cells[columnIndex].innerText) : a.cells[columnIndex].innerText;
+                const bValue = isNumericColumn ? parseFloat(b.cells[columnIndex].innerText) : b.cells[columnIndex].innerText;
+                return aValue.localeCompare(bValue);
+            });
+
+            // Reverse the order if already sorted in the ascending order
+            if (table.lastSortedColumn === columnIndex && table.lastSortOrder === 'asc') {
+                rows.reverse();
+                table.lastSortOrder = 'desc';
+            } else {
+                table.lastSortOrder = 'asc';
+            }
+
+            table.lastSortedColumn = columnIndex;
+
+            // Rearrange rows in the table
+            for (let i = 0; i < rows.length; i++) {
+                table.appendChild(rows[i]);
+            }
+        }
+    </script>
 </head>
 <body>  
     <h1>Tableau de Bord Standardiste</h1>
     <section>
         <h2>Interventions Créées</h2>
-        <table border="1">
+        <table border="1" id="interventionsTable">
             <thead>
                 <tr>
-                    <th>Titre</th>
-                    <th>Description</th>
-                    <th>Client</th>
-                    <th>Status</th>
-                    <th>Urgence</th>
-                    <th>Date Planifiée</th>
+                    <th><button onclick="sortTable(0)">Titre</button></th>
+                    <th><button onclick="sortTable(1)">Description</button></th>
+                    <th><button onclick="sortTable(2)">Client</button></th>
+                    <th><button onclick="sortTable(3)">Status</button></th>
+                    <th><button onclick="sortTable(4)">Urgence</button></th>
+                    <th><button onclick="sortTable(5)">Date Planifiée</button></th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
+                <!-- Votre code pour afficher les interventions -->
                 {% for intervention in interventions %}
-                <tr>
-                    <td>{{ intervention.title }}</td>
-                    <td>{{ intervention.description }}</td>
-                    <td>{{ clients[intervention.client_id] }}</td>
-                    <td>{{ intervention.status }}</td>
-                    <td>{{ intervention.urgency_level }}</td>
-                    <td>{{ intervention.date_planned }}</td>
-                    <td>
-                        <a href="../classes/edit_intervention.php?id={{ intervention.intervention_id }}">Edit</a>
-                        <a href="../classes/cancel_intervention.php?id={{ intervention.intervention_id }}">Cancel</a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td>{{ intervention.title }}</td>
+                        <td>{{ intervention.description }}</td>
+                        <td>{{ clients[intervention.client_id] }}</td>
+                        <td>{{ intervention.status }}</td>
+                        <td>{{ intervention.urgency_level }}</td>
+                        <td>{{ intervention.date_planned }}</td>
+                        <td>
+                            <a href="../classes/edit_intervention.php?id={{ intervention.intervention_id }}">Edit</a>
+                            <a href="../classes/cancel_intervention.php?id={{ intervention.intervention_id }}">Cancel</a>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
