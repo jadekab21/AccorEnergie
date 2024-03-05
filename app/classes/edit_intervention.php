@@ -1,93 +1,80 @@
 <?php
-// Assurez-vous que session_start est bien placé au début du fichier
-session_start();
+require_once '../vendor/autoload.php';
+use App\Database;
 
-// Connexion à la base de données
-$dbHost = "mysql";
-$dbUser = "root";
-$dbPassword = "";
-$dbName = "AccorEnergie";
 
-try {
-    $conn = new PDO("mysql:host=$dbHost;dbname=$dbName", $dbUser, $dbPassword);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
-}
+// Assurez-vous que la classe Session gère correctement les sessions PHP.
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
-    // Debug pour voir le contenu de la session
-    var_dump($_SESSION);
-    header('Location: login.php');
-    exit;
-}
 
-// Vérifier l'ID de l'intervention
+// Utilisez la classe Database pour établir la connexion
+$db = new Database("mysql", "root", "", "AccorEnergie");
+$pdo = $db->getPdo();
+
 $interventionId = $_GET['id'] ?? '';
-
 if (empty($interventionId)) {
     die("Aucune intervention spécifiée pour l'édition.");
 }
 
-// ... (le reste de votre code)
+$message = '';
 
-// Debug pour voir le contenu de la session après la vérification
-var_dump($_SESSION);
-
-// ... (le reste de votre code)
-
-
-// Traitement de la soumission du formulaire
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Collecte des données du formulaire
-    $title = $_POST['title'];
-    $description = $_POST['description'];
-    $status = $_POST['status'];
-    $urgency_level = $_POST['urgency_level'];
-    $date_planned = $_POST['date_planned'];
+    // Préparation de la requête pour éviter les injections SQL
+    $stmt = $pdo->prepare("
+    UPDATE Interventions
+    SET 
+        title = :title,
+        description = :description,
+        ids = :status_id, 
+        idu = :urgence_id, 
+        date_planned = STR_TO_DATE(:date_planned, '%Y-%m-%dT%H:%i')
+    WHERE intervention_id = :interventionId
+");
 
-    // Mise à jour de l'intervention dans la base de données avec PDO
-    $updateQuery = "UPDATE Interventions SET 
-                        title = :title, 
-                        description = :description, 
-                        status = :status, 
-                        urgency_level = :urgency_level, 
-                        date_planned = :date_planned 
-                    WHERE intervention_id = :interventionId";
+// Utilisez la fonction date() pour formater la date au format attendu par MySQL
+$date_planned = date('Y-m-d\TH:i', strtotime($_POST['date_planned']));
 
-    $stmt = $conn->prepare($updateQuery);
-    $stmt->bindParam(':title', $title);
-    $stmt->bindParam(':description', $description);
-    $stmt->bindParam(':status', $status);
-    $stmt->bindParam(':urgency_level', $urgency_level);
-    $stmt->bindParam(':date_planned', $date_planned);
-    $stmt->bindParam(':interventionId', $interventionId);
-
-    if ($stmt->execute()) {
-        $message = "Intervention mise à jour avec succès.";
-    } else {
-        $message = "Erreur lors de la mise à jour de l'intervention: " . $stmt->errorInfo()[2];
-    }
+// Exécution de la requête avec les données du formulaire
+if ($stmt->execute([
+    ':title' => $_POST['title'],
+    ':description' => $_POST['description'],
+    ':status_id' => $_POST['status'], 
+    ':urgence_id' => $_POST['urgency_level'], 
+    ':date_planned' => $date_planned,
+    ':interventionId' => $interventionId
+])) {
+    $message = "Intervention mise à jour avec succès.";
+} else {
+    $errorInfo = $stmt->errorInfo();
+    $message = "Erreur lors de la mise à jour de l'intervention: " . $errorInfo[2];
 }
 
-// Récupérer les détails de l'intervention pour les afficher dans le formulaire avec PDO
-$query = "SELECT * FROM Interventions WHERE intervention_id = :interventionId";
-$stmt = $conn->prepare($query);
-$stmt->bindParam(':interventionId', $interventionId);
-$stmt->execute();
-$intervention = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// Récupération de l'intervention pour affichage dans le formulaire
+$stmt = $pdo->prepare("SELECT * FROM Interventions WHERE intervention_id = ?");
+$stmt->execute([$interventionId]);
+$intervention = $stmt->fetch();
 
 if (!$intervention) {
     die("Intervention non trouvée.");
 }
+// Récupération des statuts depuis la table "Status"
+// Récupération des statuts depuis la table "Status"
+$stmtStatus = $pdo->query("SELECT ids, status FROM Status");
+$statuses = $stmtStatus->fetchAll(PDO::FETCH_ASSOC);
 
-require_once '../vendor/autoload.php';
+// Récupération des niveaux d'urgence depuis la table "Urgences"
+$stmtUrgences = $pdo->query("SELECT idu, urgency_level FROM Urgences");
+$urgences = $stmtUrgences->fetchAll(PDO::FETCH_ASSOC);
+
+// Initialisation de l'environnement Twig
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/../templates');
 $twig = new \Twig\Environment($loader);
 
+// Affichage du template Twig avec les données de l'intervention
 echo $twig->render('edit_intervention.twig', [
     'intervention' => $intervention,
-    'interventionId' => $interventionId,
+    'statuses' => $statuses,
+     'urgences' => $urgences,
     'message' => $message ?? ''
 ]);
