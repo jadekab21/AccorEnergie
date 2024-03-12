@@ -1,0 +1,43 @@
+/* Réinitialisation de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Fond dégradé */
+body, html {
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to right, #2a5298, #1e3c72); /* Gradient similar to provided image */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Style Conteneur */
+h1 {
+    color: #fff;
+    margin-bottom: 30px;
+}
+
+/* Bouttons */
+button {
+    display: block;
+    margin: 20px auto;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: #000;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #333;
+}
+
+/* Remplacer le contenu réel de l’utilisateur au besoin */
