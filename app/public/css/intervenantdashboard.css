@@ -1,7 +1,7 @@
 /* Tableau de bord intervenant */
 body {
    font-family: 'Arial', sans-serif;
-   background: linear-gradient(to bottom right, #83a4d4, #b6fbff); /* Adjust to match the image gradient */
+   background: linear-gradient(to bottom right, #83a4d4, #b6fbff); 
    margin: 0;
    padding: 0;
    box-sizing: border-box;
@@ -13,33 +13,33 @@ h1 {
    text-align: center;
    padding: 20px 0;
    margin: 0;
-   border-bottom: solid 5px #000000; /* To create the black border seen in the image */
+   border-bottom: solid 5px #000000; 
 }
 
 .navigation {
    display: flex;
-   justify-content: center; /* Center the buttons */
+   justify-content: center;
    padding: 20px 0;
-   background: #ffffff; /* White background for the navigation area */
+   background: #ffffff; 
 }
 
 .navigation button {
    padding: 10px 20px;
    border: none;
-   background-color: #f2f2f2; /* Light grey background */
+   background-color: #f2f2f2; 
    cursor: pointer;
-   margin-right: 10px; /* Space between buttons */
+   margin-right: 10px; 
 }
 
 .navigation button:hover {
-   background-color: #e6e6e6; /* Slightly darker grey on hover */
+   background-color: #e6e6e6; 
 }
 
 section {
    background-color: #ffffff;
    margin: 20px;
    padding: 20px;
-   border-radius: 10px; /* Rounded corners for the sections */
+   border-radius: 10px; 
 }
 
 table {
