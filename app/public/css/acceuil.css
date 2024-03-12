@@ -1,0 +1,93 @@
+/* Réinitialiser certains éléments de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body, html {
+    height: 100%;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Image de fond */
+body {
+    background-image: url('path-to-your-background-image.jpg');
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Forme des conteneurs */
+#form-container {
+    width: 350px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Mise en forme */
+#login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+#login-form > div {
+    margin-bottom: 15px;
+}
+
+/* Étiquettes d’entrée */
+label {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+    display: block;
+}
+
+/* Champs de saisies */
+input[type='text'],
+input[type='password'] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Bouttons */
+button,
+input[type='submit'] {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: #0f5;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover,
+input[type='submit']:hover {
+    background: #0c4;
+}
+
+/* Case à cocher et liens */
+#login-form .checkbox,
+#login-form a {
+    font-size: 14px;
+    color: #333;
+}
+
+/* En-tête au-dessus du formulaire */
+#form-container > header {
+    font-size: 24px;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Remplacer le contenu réel de l’utilisateur au besoin */
