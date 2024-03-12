@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}Accueil - AccordEnergie{% endblock %}</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/accueil.css">
     <script src="script.js" defer></script>
 </head>
 <body>
     <div id="form-container">
         {% block content %}
+         {% if error %}
+        <div>{{ error }}</div>
+    {% endif %}
         <!-- Formulaire de Connexion -->
         <form id="login-form" action="public/index.php" method="post">
             <div>
