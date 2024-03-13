@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Éditer Status</title>
+</head>
+<body>
+    <h1>Éditer Status</h1>
+    <form action="edit_status.php?id={{ status.ids }}" method="post">
+        <input type="hidden" name="ids" value="{{ status.ids }}">
+        <div>
+            <label for="status">Nom du Status:</label>
+            <input type="text" id="status" name="status" value="{{ status.status }}">
+        </div>
+        <button type="submit">Mettre à jour</button>
+    </form>
+</body>
+</html>
