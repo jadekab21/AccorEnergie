@@ -7,7 +7,9 @@
 </head>
 <body>
     <h1>Modifier l'Intervention</h1>
-    <form action="edit_intervention.php?id={{ intervention.intervention_id }}" method="post">
+   <form action="index.php" method="post">
+     <input type="hidden" name="action" value="editIntervention">
+    <input type="hidden" name="interventionId" value="{{ intervention.intervention_id }}">
         <label for="title">Titre:</label>
         <input type="text" id="title" name="title" value="{{ intervention.title }}" required>
         
