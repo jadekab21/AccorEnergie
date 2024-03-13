@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Supprimer Urgence</title>
+</head>
+<body>
+    <h1>Supprimer Urgence</h1>
+    <p>Êtes-vous sûr de vouloir supprimer cette Urgence ?</p>
+    <form action="delete_urgence.php" method="post">
+        <input type="hidden" name="id" value="{{ urgenceId }}">
+        <button type="submit">Supprimer</button>
+        <a href="delete_urgence.php">Annuler</a>
+    </form>
+</body>
+</html>
