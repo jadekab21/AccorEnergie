@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Supprimer Status</title>
+</head>
+<body>
+    <h1>Supprimer Status</h1>
+    <p>Êtes-vous sûr de vouloir supprimer ce status ?</p>
+    <form action="delete_status.php" method="post">
+        <input type="hidden" name="id" value="{{ statusId }}">
+        <button type="submit">Supprimer</button>
+        <a href="delete_status.php">Annuler</a>
+    </form>
+</body>
+</html>
