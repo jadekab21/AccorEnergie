@@ -179,8 +179,120 @@ if (isset($_GET['action']) && $_GET['action'] === 'editIntervention' && isset($_
     echo $page->editInterventionForm($interventionId);
     exit;
 }
+// Traitement du formulaire de mise à jour d'intervention
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'editIntervention') {
+    // Récupération des données du formulaire
+    $interventionId = $_POST['interventionId'];
+    $title = $_POST['title'];
+    $description = $_POST['description'];
+    $status = $_POST['status'];
+    $urgencyLevel = $_POST['urgency_level'];
+    $datePlanned = $_POST['date_planned'];
+    $intervenantIds = $_POST['intervenant_ids'] ?? []; // S'assurer que c'est un tableau
+
+    // Préparation des données pour la mise à jour
+    $interventionData = [
+        'interventionId' => $interventionId,
+        'title' => $title,
+        'description' => $description,
+        'status' => $status,
+        'urgency_level' => $urgencyLevel,
+        'date_planned' => $datePlanned,
+        'intervenant_ids' => $intervenantIds, // Assurez-vous que la méthode editIntervention gère correctement les IDs des intervenants
+    ];
+
+    // Appel à la méthode de mise à jour
+    $result = $page->editIntervention($interventionData);
+
+    // Gestion de la réponse
+    if ($result) {
+        // Redirection vers la page d'accueil du tableau de bord avec un message de succès
+      //  header('Location: dashboard.php?success=Intervention mise à jour avec succès');
+    } else {
+        // Afficher le message d'erreur (ou le renvoyer vers le formulaire avec le message d'erreur)
+       // header('Location: edit_intervention.php?id=' . $interventionId . '&error=Erreur lors de la mise à jour de l\'intervention');
+    }
+    exit;
+}
+
+// Vérification de la déconnexion
+if (isset($_GET['action']) && $_GET['action'] === 'logout') {
+    $session->logout();
+}
 
 
+if (isset($_GET['action']) === 'getComments' && isset($_GET['interventionId'])) {
+    $comments = $page->getCommentsByInterventionId($_GET['interventionId']);
+    header('Content-Type: application/json');
+    echo json_encode($comments);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
+    switch ($_POST['action']) {
+        case 'addUrgence':
+            if (!empty($_POST['urgence'])) {
+                $urgence = trim($_POST['urgence']);
+                if ($page->addUrgence($urgence)) {
+                    // Redirection ou gestion de la réponse avec succès
+                   // header('Location: /chemin/vers/gestionUrgences.php?success=Urgence ajoutée');
+                } else {
+                    die('Erreur lors de l\'ajout de l\'urgence.');
+                }
+            } else {
+                die('Données du formulaire non valides.');
+            }
+            break;
+            case 'deleteUrgence':
+                if (isset($_POST['id'])) {
+                    $idu = $_POST['id'];
+                    if ($page->deleteUrgence($idu)) {
+                        // Redirection avec message de succès
+                       // header('Location: gestionUrgences.php?success=Urgence supprimée avec succès');
+                    } else {
+                        // Gestion de l'erreur
+                       // header('Location: gestionUrgences.php?error=Erreur lors de la suppression de l\'urgence');
+                    }
+                } else {
+                    // ID d'urgence manquant
+                  //  header('Location: gestionUrgences.php?error=ID d\'urgence manquant');
+                }
+                break;
+                case 'editUrgence':
+                    if (isset($_POST['idu'], $_POST['urgence'])) {
+                        $idu = $_POST['idu'];
+                        $newUrgencyLevel = $_POST['urgence'];
+                        if ($page->editUrgence($idu, $newUrgencyLevel)) {
+                            // Redirection avec message de succès
+                            //header('Location: gestionUrgences.php?success=Urgence mise à jour avec succès');
+                        } else {
+                            // Gestion de l'erreur
+                           // header('Location: gestionUrgences.php?error=Erreur lors de la mise à jour de l\'urgence');
+                        }
+                    } else {
+                        // Données manquantes
+                       // header('Location: gestionUrgences.php?error=Données manquantes pour la mise à jour');
+                    }
+                    break;
+
+        // D'autres cas pour d'autres actions
+    }
+}
+// Traitement de l'ajout d'un commentaire
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) === 'postComment') {
+    $interventionId = $_POST['intervention_id'];
+    $userId = $session->get('user_id'); // Assurez-vous d'avoir la session démarrée et d'obtenir l'ID utilisateur
+    $content = $_POST['content'];
+
+    if ($page->postComment($interventionId, $userId, $content)) {
+        // Redirection ou message de succès
+        echo json_encode(['success' => true]);
+    } else {
+        // Gestion de l'erreur
+        echo $twig->render('error_template.twig', ['error' => 'Erreur lors de l\'ajout du commentaire']);
+    }
+    exit;
+}
 echo $twig->render('index.html.twig', ['error' => $errorMessage]);
 
 
