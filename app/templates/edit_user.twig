@@ -8,7 +8,7 @@
 <body>
     <h1>Modifier l'Utilisateur</h1>
    
-    <form action="edit_user.php?id={{ userId }}" method="post">
+    <form action="edit_user.php?id={{ user.user_id }}" method="post">
         <label for="username">Nom d'utilisateur:</label>
         <input type="text" id="username" name="username" value="{{ user.username }}" required>
         
@@ -26,5 +26,9 @@
         
         <button type="submit">Mettre à jour</button>
     </form>
+    {% if message %}
+    <div>{{ message }}</div>
+{% endif %}
+
 </body>
 </html>
