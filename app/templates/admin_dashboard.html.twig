@@ -3,99 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <title>Tableau de Bord Admin - AccordEnergie</title>
-    <link rel="stylesheet" href="/css/admin_dashboard.css">
-    <script>
-        function sortTable(tableId, columnIndex) {
-            const table = document.getElementById(tableId);
-            const rows = Array.from(table.rows).slice(1); // Exclude the header row
-            const isNumericColumn = [2, 3, 4, 5, 6].includes(columnIndex);
-
-            rows.sort((a, b) => {
-                const aValue = isNumericColumn ? parseFloat(a.cells[columnIndex].innerText) : a.cells[columnIndex].innerText;
-                const bValue = isNumericColumn ? parseFloat(b.cells[columnIndex].innerText) : b.cells[columnIndex].innerText;
-                return aValue.localeCompare(bValue);
-            });
-
-            // Reverse the order if already sorted in the ascending order
-            if (table.lastSortedColumn === columnIndex && table.lastSortOrder === 'asc') {
-                rows.reverse();
-                table.lastSortOrder = 'desc';
-            } else {
-                table.lastSortOrder = 'asc';
-            }
-
-            table.lastSortedColumn = columnIndex;
-
-            // Rearrange rows in the table
-            for (let i = 0; i < rows.length; i++) {
-                table.appendChild(rows[i]);
-            }
+    <link rel="stylesheet" href="/css/admin_css">
+    <style>
+        section {
+            display: none;
         }
-    </script>
+    </style>
 </head>
 <body>
     <h1>Tableau de Bord Admin</h1>
-    <section>
+    
+    <div class="navigation">
+    <button id="btnGestionInterventions">Gestion des Interventions</button>
+    <button id="btnGestionUtilisateurs">Gestion des Utilisateurs</button>
+    <button id="btnGestionStatus">Gestion des Status</button>
+    <button id="btnGestionUrgences">Gestion des Urgences</button>
+</div>
+
+
+    <section id="gestionInterventions">
         <h2>Gestion des Interventions</h2>
-        <table border="1" id="interventionsTable">
+        <table border="1">
             <thead>
                 <tr>
-                    <th><button onclick="sortTable('interventionsTable', 0)">Titre</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 1)">Description</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 2)">Client</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 3)">Intervenant</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 4)">Status</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 5)">Urgence</button></th>
-                    <th><button onclick="sortTable('interventionsTable', 6)">Date Planifiée</button></th>
+                    <th>Titre</th>
+                    <th>Description</th>
+                    <th>Client</th>
+                    <th>Intervenants</th>
+                    <th>Status</th>
+                    <th>Urgence</th>
+                    <th>Date Planifiée</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Votre code pour afficher les interventions -->
                 {% for intervention in interventions %}
-                    <tr>
-                        <td>{{ intervention.title }}</td>
-                        <td>{{ intervention.description }}</td>
-                        <td>{{ intervention.client_id }}</td>
-                        <td>{{ intervention.intervenant_id }}</td>
-                        <td>{{ intervention.status }}</td>
-                        <td>{{ intervention.urgency_level }}</td>
-                        <td>{{ intervention.date_planned }}</td>
-                        <td>
-                            <a href="../classes/edit_intervention.php?id={{ intervention.intervenant_id }}">Edit</a>
-                            <a href="delete_intervention.php?id={{ intervention.id }}">Delete</a>
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ intervention.title }}</td>
+                    <td>{{ intervention.description }}</td>
+                    <td>{{ intervention.client_id }}</td>
+                  <td>{{ intervention.intervenants_ids }}</td> 
+                    <td>{{ intervention.status }}</td>
+                    <td>{{ intervention.urgency_level }}</td>
+                    <td>{{ intervention.date_planned }}</td>
+                    <td>
+                     <a href="index.php?action=editIntervention&id={{ intervention.intervention_id }}">Edit</a>
+
+                        <form action="index.php" method="POST">
+    <input type="hidden" name="action" value="deleteIntervention">
+    <input type="hidden" name="intervention_id" value="{{ intervention.intervention_id }}">
+    <button type="submit">Delete</button>
+</form>
+
+
+                         <a href="javascript:void(0)" onclick="addComment({{ intervention.intervention_id }})">Commenter</a>
+    <a href="javascript:void(0)" onclick="showComments({{ intervention.intervention_id }}, this)">Afficher les commentaires</a>
+                    </td>
+                </tr>
                 {% endfor %}
+                <!-- Conteneur pour afficher les commentaires -->
+<div id="comments-container" style="display:none;">
+    <h3>Commentaires</h3>
+    <ul id="comments-list"></ul>
+</div>
             </tbody>
         </table>
     </section>
 
-    <section>
+    <section id="gestionUtilisateurs">
         <h2>Gestion des Utilisateurs</h2>
-        <table border="1" id="usersTable">
+        <table border="1">
             <thead>
                 <tr>
-                    <th><button onclick="sortTable('usersTable', 0)">Nom d'utilisateur</button></th>
-                    <th><button onclick="sortTable('usersTable', 1)">Email</button></th>
-                    <th><button onclick="sortTable('usersTable', 2)">Rôle</button></th>
+                    <th>Nom d'utilisateur</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
-                    <tr>
-                        <td>{{ user.username }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.role_id }}</td>
-                        <td>
-                            <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
-                            <a href="delete_user.php?id={{ user.id }}">Delete</a>
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role_id }}</td>
+                    <td>
+                        <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
+                        <a href="/classes/delete_user.php?id={{ user.user_id }}">Delete</a>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </section>
+<section id="gestionStatus">
+    <h2>Gestion des Status</h2>
+    <button id="btnAjouterStatus">Ajouter un nouveau status</button>
+    <div id="formAjouterStatus" style="display:none;">
+        <form action="index.php" method="post">
+            <input type="hidden" name="action" value="createStatus">
+            <label for="nomStatus">Nom du Status :</label>
+            <input type="text" id="nomStatus" name="status" required>
+            <button type="submit">Créer Status</button>
+        </form>
+    </div>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID Status</th>
+                <th>Nom du Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for status in statuses %}
+            <tr>
+                <td>{{ status.ids }}</td>
+                <td>{{ status.status }}</td>
+                <td>
+                   <form action="index.php" method="post">
+    <input type="hidden" name="action" value="editStatus">
+    <input type="hidden" name="ids" value="{{ status.ids }}">
+    <label for="newStatus{{ status.ids }}">Nouveau statut :</label>
+    <input type="text" id="newStatus{{ status.ids }}" name="newStatus" value="{{ status.status }}" required>
+    <button type="submit">Mettre à jour</button>
+</form>
+
+                   <!-- Exemple dans votre fichier Twig pour chaque statut listé -->
+<form action="index.php" method="post">
+    <input type="hidden" name="action" value="deleteStatus">
+    <input type="hidden" name="ids" value="{{ status.ids }}">
+    <button type="submit">Supprimer</button>
+</form>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+<section id="gestionUrgences">
+    <h2>Gestion des Urgences</h2>
+    <button id="btnAjouterUrgence">Ajouter une nouvelle urgence</button>
+    <div id="formAjouterUrgence" style="display:none;">
+        <form action="/classes/create_urgence.php" method="post">
+            <label for="nomUrgence">Nom de l'Urgence :</label>
+            <input type="text" id="nomUrgence" name="urgence" required>
+            <button type="submit">Créer Urgence</button>
+        </form>
+    </div>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>ID Urgence</th>
+                <th>Nom de l'Urgence</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for urgence in urgences %}
+            <tr>
+                <td>{{ urgence.idu }}</td>
+                <td>{{ urgence.urgency_level }}</td>
+                <td>
+                    <a href="/classes/edit_urgence.php?id={{ urgence.idu}}">Edit</a>
+                    <a href="/classes/delete_urgence.php?id={{ urgence.idu }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+    <footer>
+        <p>Tableau de bord admin pour la gestion d'AccordEnergie.</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+    var btnGestionInterventions = document.getElementById('btnGestionInterventions');
+    var btnGestionUtilisateurs = document.getElementById('btnGestionUtilisateurs');
+    var btnGestionStatus = document.getElementById('btnGestionStatus');
+    var btnGestionUrgences = document.getElementById('btnGestionUrgences');
+    
+    var sectionGestionInterventions = document.getElementById('gestionInterventions');
+    var sectionGestionUtilisateurs = document.getElementById('gestionUtilisateurs');
+    var sectionGestionStatus = document.getElementById('gestionStatus');
+    var sectionGestionUrgences = document.getElementById('gestionUrgences');
+
+    var btnAjouterStatus = document.getElementById('btnAjouterStatus');
+    var formAjouterStatus = document.getElementById('formAjouterStatus');
+    
+    var btnAjouterUrgence = document.getElementById('btnAjouterUrgence');
+    var formAjouterUrgence = document.getElementById('formAjouterUrgence');
+
+    btnAjouterUrgence.addEventListener('click', function() {
+        formAjouterUrgence.style.display = 'block';
+    });
+
+    btnAjouterStatus.addEventListener('click', function() {
+        formAjouterStatus.style.display = 'block';
+    });
+
+    btnGestionInterventions.addEventListener('click', function() {
+        sectionGestionInterventions.style.display = 'block';
+        sectionGestionUtilisateurs.style.display = 'none';
+        sectionGestionStatus.style.display = 'none';
+        sectionGestionUrgences.style.display = 'none';
+    });
+
+    btnGestionUtilisateurs.addEventListener('click', function() {
+        sectionGestionInterventions.style.display = 'none';
+        sectionGestionUtilisateurs.style.display = 'block';
+        sectionGestionStatus.style.display = 'none';
+        sectionGestionUrgences.style.display = 'none';
+    });
+
+    btnGestionStatus.addEventListener('click', function() {
+        sectionGestionInterventions.style.display = 'none';
+        sectionGestionUtilisateurs.style.display = 'none';
+        sectionGestionStatus.style.display = 'block';
+        sectionGestionUrgences.style.display = 'none';
+    });
+
+    btnGestionUrgences.addEventListener('click', function() {
+        sectionGestionInterventions.style.display = 'none';
+        sectionGestionUtilisateurs.style.display = 'none';
+        sectionGestionStatus.style.display = 'none';
+        sectionGestionUrgences.style.display = 'block';
+    });
+});
+function addComment(interventionId) {
+    var commentContent = prompt("Entrez votre commentaire :"); // Utilisation d'un prompt pour simplification, envisagez d'utiliser un formulaire modal pour une meilleure UX
+    if (commentContent) {
+        fetch('/classes/post_comment.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'intervention_id=' + interventionId + '&content=' + encodeURIComponent(commentContent)
+        })
+        .then(response => {
+            if(response.ok) {
+                alert("Commentaire ajouté avec succès");
+                // Optionnellement, rafraîchir la liste des commentaires
+                showComments(interventionId);
+            } else {
+                alert("Erreur lors de l'ajout du commentaire");
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+}
+function showComments(interventionId) {
+    // L'URL à laquelle la requête AJAX sera envoyée pour récupérer les commentaires
+    var apiUrl = '/path/to/fetch_comments.php?intervention_id=' + interventionId;
+
+    fetch(apiUrl)
+    .then(response => response.json())
+    .then(comments => {
+        var commentsList = document.getElementById('comments-list');
+        commentsList.innerHTML = ''; // Nettoyer les commentaires précédents
+        
+        // Construire la liste des commentaires
+        comments.forEach(comment => {
+            var li = document.createElement('li');
+            li.textContent = comment.content; // Exemple de champ contenu dans les données de commentaire
+            commentsList.appendChild(li);
+        });
+
+        // Afficher le conteneur de commentaires
+        document.getElementById('comments-container').style.display = 'block';
+    })
+    .catch(error => console.error('Erreur lors du chargement des commentaires:', error));
+}
+
+        
+
+    </script>
 </body>
 </html>
