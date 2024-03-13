@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Éditer Urgence</title>
+</head>
+<body>
+    <h1>Éditer urgence</h1>
+    <form action="edit_urgence.php?id={{ urgence.idu }}" method="post">
+        <input type="hidden" name="idu" value="{{ urgence.idu }}">
+        <div>
+            <label for="urgence">Nom d'urgence:</label>
+            <input type="text" id="urgence" name="urgence" value="{{ urgence.urgence }}">
+        </div>
+        <button type="submit">Mettre à jour</button>
+    </form>
+</body>
+</html>
