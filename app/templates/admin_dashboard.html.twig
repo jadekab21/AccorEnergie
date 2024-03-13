@@ -37,35 +37,35 @@
                 </tr>
             </thead>
             <tbody>
-                {% for intervention in interventions %}
-                <tr>
-                    <td>{{ intervention.title }}</td>
-                    <td>{{ intervention.description }}</td>
-                    <td>{{ intervention.client_id }}</td>
-                  <td>{{ intervention.intervenants_ids }}</td> 
-                    <td>{{ intervention.status }}</td>
-                    <td>{{ intervention.urgency_level }}</td>
-                    <td>{{ intervention.date_planned }}</td>
-                    <td>
-                     <a href="index.php?action=editIntervention&id={{ intervention.intervention_id }}">Edit</a>
-
-                        <form action="index.php" method="POST">
-    <input type="hidden" name="action" value="deleteIntervention">
-    <input type="hidden" name="intervention_id" value="{{ intervention.intervention_id }}">
-    <button type="submit">Delete</button>
-</form>
-
-
-                         <a href="javascript:void(0)" onclick="addComment({{ intervention.intervention_id }})">Commenter</a>
-    <a href="javascript:void(0)" onclick="showComments({{ intervention.intervention_id }}, this)">Afficher les commentaires</a>
-                    </td>
-                </tr>
-                {% endfor %}
-                <!-- Conteneur pour afficher les commentaires -->
-<div id="comments-container" style="display:none;">
+             {% for intervention in interventions %}
+<tr>
+    <td>{{ intervention.title }}</td>
+    <td>{{ intervention.description }}</td>
+    <td>{{ intervention.client_id }}</td>
+    <td>{{ intervention.intervenants_ids }}</td> 
+    <td>{{ intervention.status }}</td>
+    <td>{{ intervention.urgency_level }}</td>
+    <td>{{ intervention.date_planned }}</td>
+    <td>
+        <a href="index.php?action=editIntervention&id={{ intervention.intervention_id }}">Edit</a>
+        <form action="index.php" method="POST">
+            <input type="hidden" name="action" value="deleteIntervention">
+            <input type="hidden" name="intervention_id" value="{{ intervention.intervention_id }}">
+            <button type="submit">Delete</button>
+        </form>
+        <a href="javascript:void(0)" onclick="addComment({{ intervention.intervention_id }})">Commenter</a>
+        <a href="javascript:void(0)" onclick="showComments({{ intervention.intervention_id }})">Afficher les commentaires</a>
+    </td>
+</tr>
+<div id="comments-container-{{ intervention.intervention_id }}" style="display:none;">
     <h3>Commentaires</h3>
-    <ul id="comments-list"></ul>
+    <ul id="comments-list-{{ intervention.intervention_id }}"></ul>
 </div>
+{% endfor %}
+
+
+
+
             </tbody>
         </table>
     </section>
@@ -146,11 +146,13 @@
     <h2>Gestion des Urgences</h2>
     <button id="btnAjouterUrgence">Ajouter une nouvelle urgence</button>
     <div id="formAjouterUrgence" style="display:none;">
-        <form action="/classes/create_urgence.php" method="post">
-            <label for="nomUrgence">Nom de l'Urgence :</label>
-            <input type="text" id="nomUrgence" name="urgence" required>
-            <button type="submit">Créer Urgence</button>
-        </form>
+       <form action="index.php" method="post">
+    <input type="hidden" name="action" value="addUrgence">
+    <label for="urgence">Nom de l'Urgence :</label>
+    <input type="text" id="urgence" name="urgence" required>
+    <button type="submit">Ajouter Urgence</button>
+</form>
+
     </div>
     <table border="1">
         <thead>
@@ -166,8 +168,20 @@
                 <td>{{ urgence.idu }}</td>
                 <td>{{ urgence.urgency_level }}</td>
                 <td>
-                    <a href="/classes/edit_urgence.php?id={{ urgence.idu}}">Edit</a>
-                    <a href="/classes/delete_urgence.php?id={{ urgence.idu }}">Delete</a>
+                    <form action="index.php" method="post">
+    <input type="hidden" name="action" value="editUrgence">
+    <input type="hidden" name="idu" value="{{ urgence.idu }}">
+    <label for="urgence">Niveau d'urgence :</label>
+    <input type="text" id="urgence" name="urgence" value="{{ urgence.urgency_level }}" required>
+    <button type="submit">Mettre à jour</button>
+</form>
+
+                   <form action="index.php" method="post">
+    <input type="hidden" name="action" value="deleteUrgence">
+    <input type="hidden" name="id" value="{{ urgence.idu }}">
+    <button type="submit">Supprimer</button>
+</form>
+
                 </td>
             </tr>
             {% endfor %}
@@ -234,19 +248,17 @@
     });
 });
 function addComment(interventionId) {
-    var commentContent = prompt("Entrez votre commentaire :"); // Utilisation d'un prompt pour simplification, envisagez d'utiliser un formulaire modal pour une meilleure UX
+    var commentContent = prompt("Entrez votre commentaire :");
     if (commentContent) {
-        fetch('/classes/post_comment.php', {
+        fetch('index.php', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'intervention_id=' + interventionId + '&content=' + encodeURIComponent(commentContent)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+            body: `action=postComment&intervention_id=${interventionId}&content=${encodeURIComponent(commentContent)}`
         })
-        .then(response => {
-            if(response.ok) {
+        .then(response => response.json()) // Expect a JSON response
+        .then(data => {
+            if(data.success) {
                 alert("Commentaire ajouté avec succès");
-                // Optionnellement, rafraîchir la liste des commentaires
                 showComments(interventionId);
             } else {
                 alert("Erreur lors de l'ajout du commentaire");
@@ -255,31 +267,36 @@ function addComment(interventionId) {
         .catch(error => console.error('Erreur:', error));
     }
 }
-function showComments(interventionId) {
-    // L'URL à laquelle la requête AJAX sera envoyée pour récupérer les commentaires
-    var apiUrl = '/path/to/fetch_comments.php?intervention_id=' + interventionId;
 
-    fetch(apiUrl)
+
+function showComments(interventionId) {
+    fetch(`index.php?action=getComments&interventionId=${interventionId}`)
     .then(response => response.json())
-    .then(comments => {
-        var commentsList = document.getElementById('comments-list');
-        commentsList.innerHTML = ''; // Nettoyer les commentaires précédents
-        
-        // Construire la liste des commentaires
-        comments.forEach(comment => {
-            var li = document.createElement('li');
-            li.textContent = comment.content; // Exemple de champ contenu dans les données de commentaire
+    .then(data => {
+        const commentsList = document.getElementById(`comments-list-${interventionId}`);
+        if (!commentsList) {
+            console.error('Élément de liste de commentaires introuvable:', `comments-list-${interventionId}`);
+            return;
+        }
+        commentsList.innerHTML = '';
+        data.forEach(comment => {
+            const li = document.createElement('li');
+            li.textContent = comment.content;
             commentsList.appendChild(li);
         });
-
-        // Afficher le conteneur de commentaires
-        document.getElementById('comments-container').style.display = 'block';
+        const commentsContainer = document.getElementById(`comments-container-${interventionId}`);
+        if (!commentsContainer) {
+            console.error('Conteneur de commentaires introuvable:', `comments-container-${interventionId}`);
+            return;
+        }
+        commentsContainer.style.display = 'block';
     })
-    .catch(error => console.error('Erreur lors du chargement des commentaires:', error));
+    .catch(error => console.error('Erreur:', error));
 }
 
-        
-
     </script>
+    {# Ajoutez ceci dans votre template là où vous voulez afficher le lien de déconnexion #}
+<a href="?action=logout">Déconnexion</a>
+
 </body>
 </html>
