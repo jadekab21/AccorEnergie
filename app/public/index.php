@@ -23,14 +23,12 @@ $twig = new \Twig\Environment($loader);
 
 $requestUri = $_SERVER['REQUEST_URI'];
 
+
 if (strpos($requestUri, '/classes/cancel_intervention.php') !== false) {
     require '../classes/cancel_intervention.php';
     exit;
 }
-if (strpos($requestUri, '/classes/edit_intervention.php') !== false) {
-    require '../classes/edit_intervention.php';
-    exit;
-}
+
 // Vérification de la demande de suppression
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteIntervention') {
     $interventionId = (int) $_POST['intervention_id'];
@@ -63,35 +61,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     echo $twig->render('message.twig', ['message' => $message]);
     exit;
 }
-
-if (strpos($requestUri, '/classes/edit_user.php') !== false) {
-    require '../classes/edit_user.php';
-    exit;
-}
-
-
-if (strpos($requestUri, '/classes/create_urgence.php') !== false) {
-    require '../classes/create_urgence.php';
-    exit;
-}
-if (strpos($requestUri, '/classes/delete_urgence.php') !== false) {
-    require '../classes/delete_urgence.php';
-    exit;
-}
-if (strpos($requestUri, '/classes/edit_urgence.php') !== false) {
-    require '../classes/create_status.php';
-    exit;
-}
-
 $errorMessage = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['form_type']) && $_POST['form_type'] == 'submit') {
-        require '../classes/register.php';
+        
+        $page->registerUser($_POST);
         exit;
     }
 
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+    
 
     $stmt = $db->getPdo()->prepare("SELECT user_id, password, role_name FROM Users INNER JOIN Roles ON Users.role_id = Roles.role_id WHERE username = ?");
     $stmt->execute([$username]);
@@ -174,46 +154,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $success = $page->deleteStatus($statusId);
     exit;
 }
-if (isset($_GET['action']) && $_GET['action'] === 'editIntervention' && isset($_GET['id'])) {
-    $interventionId = $_GET['id'];
+
+if (isset($_GET['action']) && $_GET['action'] === 'editInterventionForm' && isset($_GET['intervention_id'])) {
+    $interventionId = $_GET['intervention_id'];
+    // Assurez-vous d'avoir une méthode dans la classe `Page` pour récupérer les détails de l'utilisateur par ID
     echo $page->editInterventionForm($interventionId);
     exit;
 }
-// Traitement du formulaire de mise à jour d'intervention
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'editIntervention') {
-    // Récupération des données du formulaire
-    $interventionId = $_POST['interventionId'];
-    $title = $_POST['title'];
-    $description = $_POST['description'];
-    $status = $_POST['status'];
-    $urgencyLevel = $_POST['urgency_level'];
-    $datePlanned = $_POST['date_planned'];
-    $intervenantIds = $_POST['intervenant_ids'] ?? []; // S'assurer que c'est un tableau
 
-    // Préparation des données pour la mise à jour
-    $interventionData = [
-        'interventionId' => $interventionId,
-        'title' => $title,
-        'description' => $description,
-        'status' => $status,
-        'urgency_level' => $urgencyLevel,
-        'date_planned' => $datePlanned,
-        'intervenant_ids' => $intervenantIds, // Assurez-vous que la méthode editIntervention gère correctement les IDs des intervenants
-    ];
 
-    // Appel à la méthode de mise à jour
-    $result = $page->editIntervention($interventionData);
 
-    // Gestion de la réponse
-    if ($result) {
-        // Redirection vers la page d'accueil du tableau de bord avec un message de succès
-      //  header('Location: dashboard.php?success=Intervention mise à jour avec succès');
-    } else {
-        // Afficher le message d'erreur (ou le renvoyer vers le formulaire avec le message d'erreur)
-       // header('Location: edit_intervention.php?id=' . $interventionId . '&error=Erreur lors de la mise à jour de l\'intervention');
-    }
+if (isset($_GET['action']) && $_GET['action'] === 'editUserForm' && isset($_GET['user_id'])) {
+    $userId = $_GET['user_id'];
+    // Assurez-vous d'avoir une méthode dans la classe `Page` pour récupérer les détails de l'utilisateur par ID
+    $userDetails = $page->getUserDetailsById($userId);
+    
+    // Assurez-vous également d'avoir une méthode pour récupérer tous les rôles si votre formulaire en a besoin
+    $roles = $page->getAllRoles();
+
+    echo $page->render('edit_user.twig', [
+        'user' => $userDetails,
+        'roles' => $roles
+    ]);
     exit;
 }
+
 
 // Vérification de la déconnexion
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
@@ -221,12 +186,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 }
 
 
-if (isset($_GET['action']) === 'getComments' && isset($_GET['interventionId'])) {
-    $comments = $page->getCommentsByInterventionId($_GET['interventionId']);
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['action'] === 'getComments' && isset($_GET['interventionId'])) {
+    $interventionId = $_GET['interventionId'];
+    $comments = $page->getCommentsByInterventionId($interventionId);
+
     header('Content-Type: application/json');
     echo json_encode($comments);
     exit;
 }
+
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     switch ($_POST['action']) {
@@ -274,25 +242,93 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                        // header('Location: gestionUrgences.php?error=Données manquantes pour la mise à jour');
                     }
                     break;
+                    case 'editUser':
+                        if (isset($_POST['user_id'], $_POST['username'], $_POST['email'], $_POST['role_id'])) {
+                            $userId = $_POST['user_id'];
+                            $username = $_POST['username'];
+                            $email = $_POST['email'];
+                            $roleId = $_POST['role_id'];
+                            if ($page->editUser($userId, $username, $email, $roleId)) {
+                                // Redirection avec message de succès
+                               // header('Location: user_management.php?success=User updated successfully');
+                            } else {
+                                // Gestion de l'erreur
+                               // header('Location: user_management.php?error=Error updating user');
+                            }
+                        } else {
+                            // Données manquantes
+                           // header('Location: user_management.php?error=Missing data for updating');
+                        }
+                        break;
+                        case'editIntervention': 
+                            $interventionId = $_POST['interventionId'];
+                            $title = $_POST['title'];
+                            $description = $_POST['description'];
+                            $status = $_POST['status'];
+                            $urgencyLevel = $_POST['urgency_level'];
+                            $datePlanned = $_POST['date_planned'];
+                            $intervenantIds = $_POST['intervenant_ids'] ?? [];
 
-        // D'autres cas pour d'autres actions
-    }
+                                                    // Appeler votre méthode pour mettre à jour l'intervention
+                            $result = $page->editIntervention([
+                                'interventionId' => $interventionId,
+                                'title' => $title,
+                                'description' => $description,
+                                'status' => $status,
+                                'urgency_level' => $urgencyLevel,
+                                'date_planned' => $datePlanned,
+                                'intervenant_ids' => $intervenantIds,
+                            ]);
+
+                            if ($result) {
+                                // Gestion de la réussite
+                                header('Location: admin_dashboard.php?success=Intervention mise à jour');
+                                error_log(print_r($_POST, true));
+                            } else {
+                                // Gestion de l'échec
+                                header('Location: admin_dashboard.php?error=Erreur lors de la mise à jour');
+                                error_log(print_r($_POST, true));
+                            }
+                            break;
+                                // D'autres cas pour d'autres actions
+                            }
 }
+
 // Traitement de l'ajout d'un commentaire
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) === 'postComment') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'postComment') {
     $interventionId = $_POST['intervention_id'];
-    $userId = $session->get('user_id'); // Assurez-vous d'avoir la session démarrée et d'obtenir l'ID utilisateur
+    $userId = $_SESSION['user_id']; // Récupérer l'ID de l'utilisateur connecté depuis la session
     $content = $_POST['content'];
 
-    if ($page->postComment($interventionId, $userId, $content)) {
-        // Redirection ou message de succès
-        echo json_encode(['success' => true]);
+    $result = $page->addComment($interventionId, $userId, $content);
+
+    if ($result) {
+        echo json_encode(['success' => true, 'message' => 'Commentaire ajouté avec succès']);
     } else {
-        // Gestion de l'erreur
-        echo $twig->render('error_template.twig', ['error' => 'Erreur lors de l\'ajout du commentaire']);
+        echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'ajout du commentaire']);
     }
     exit;
 }
+
+
+
+
+
+if (isset($_GET['action']) && $_GET['action'] === 'deleteUser' && isset($_GET['user_id'])) {
+    $userId = $_GET['user_id'];
+    // Assurez-vous d'avoir une méthode dans votre classe `Page` qui gère la suppression de l'utilisateur par ID
+    $success = $page->deleteUserById($userId);
+    
+    if ($success) {
+        // Redirection avec message de succès
+      //  header('Location: index.php?success=User deleted successfully');
+    } else {
+        // Redirection ou affichage d'un message d'erreur
+       // header('Location: index.php?error=Error deleting user');
+    }
+    exit;
+}
+
 echo $twig->render('index.html.twig', ['error' => $errorMessage]);
 
 
