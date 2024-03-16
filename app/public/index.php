@@ -9,13 +9,14 @@ use App\Page;
 
 
 $session = new Session();
+error_log('Session Debug: ' . print_r($_SESSION, true));
 $page = new Page();
 $clientId = $session->get('user_id');
 $intervenantId = $session->get('user_id');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-$session = new Session();
+
 $db = new Database("mysql", "root", "", "AccorEnergie");
 
 $loader = new \Twig\Loader\FilesystemLoader('../templates');
@@ -23,11 +24,6 @@ $twig = new \Twig\Environment($loader);
 
 $requestUri = $_SERVER['REQUEST_URI'];
 
-
-if (strpos($requestUri, '/classes/cancel_intervention.php') !== false) {
-    require '../classes/cancel_intervention.php';
-    exit;
-}
 
 // Vérification de la demande de suppression
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteIntervention') {
@@ -53,7 +49,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         'description' => $_POST['description'],
         'client_id' => $_POST['client_id'],
         'urgency_level' => $_POST['urgency_level'],
-        'date_planned' => $_POST['date_planned']
+        'date_planned' => $_POST['date_planned'],
+        'status_id' => $_POST['status']
     ];
     $intervenantIds = $_POST['intervenant_ids']; // Assurez-vous que c'est un tableau
 
@@ -87,6 +84,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 echo $page->render('admin_dashboard.html.twig', $dashboardData);
                 break;
             case 'client':
+                $clientId = $session->get('user_id');
                 $dashboardData = $page->getClientDashboardData($clientId);
 
                 // Rendez le template pour le tableau de bord client avec les données récupérées
@@ -97,10 +95,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dashboardData = $page->getIntervenantDashboardData($intervenantId);
     echo $page->render('intervenant_dashboard.html.twig', $dashboardData);
                 break;
-            case 'standardiste':
-                $dashboardData = $page->getStandardisteDashboardData();
-                echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
-                break;
+                case 'standardiste':
+                    // Supposons que vous stockez l'ID de l'utilisateur connecté dans la session sous la clé 'user_id'.
+                    $standardisteId = $session->get('user_id'); // Assurez-vous d'avoir la bonne clé pour l'ID de l'utilisateur.
+                
+                    // Appeler la fonction en passant l'ID du standardiste.
+                    $dashboardData = $page->getStandardisteDashboardData($standardisteId);
+                
+                    // Rendre le tableau de bord du standardiste avec les données récupérées.
+                    echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
+                    break;
+                
             default:
                 require 'public/error_page.php';
                 break;
@@ -137,6 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $result = $page->updateStatus($ids, $newStatus);
     if ($result){
         echo ("updated");
+        
     }else{
         echo("Error during update process");
     }
@@ -197,6 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action']) && $_GET['act
 
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
+    $success = false; // Initialiser la variable de succès
     switch ($_POST['action']) {
         case 'addUrgence':
             if (!empty($_POST['urgence'])) {
@@ -204,6 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 if ($page->addUrgence($urgence)) {
                     // Redirection ou gestion de la réponse avec succès
                    // header('Location: /chemin/vers/gestionUrgences.php?success=Urgence ajoutée');
+                   $success = true; 
                 } else {
                     die('Erreur lors de l\'ajout de l\'urgence.');
                 }
@@ -216,7 +224,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                     $idu = $_POST['id'];
                     if ($page->deleteUrgence($idu)) {
                         // Redirection avec message de succès
-                       // header('Location: gestionUrgences.php?success=Urgence supprimée avec succès');
+                       $success = true; 
                     } else {
                         // Gestion de l'erreur
                        // header('Location: gestionUrgences.php?error=Erreur lors de la suppression de l\'urgence');
@@ -233,6 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                         if ($page->editUrgence($idu, $newUrgencyLevel)) {
                             // Redirection avec message de succès
                             //header('Location: gestionUrgences.php?success=Urgence mise à jour avec succès');
+                            $success = true; 
                         } else {
                             // Gestion de l'erreur
                            // header('Location: gestionUrgences.php?error=Erreur lors de la mise à jour de l\'urgence');
@@ -249,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                             $email = $_POST['email'];
                             $roleId = $_POST['role_id'];
                             if ($page->editUser($userId, $username, $email, $roleId)) {
+                                $success = true; 
                                 // Redirection avec message de succès
                                // header('Location: user_management.php?success=User updated successfully');
                             } else {
@@ -282,7 +292,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
 
                             if ($result) {
                                 // Gestion de la réussite
-                                header('Location: admin_dashboard.php?success=Intervention mise à jour');
+                               // Gestion de la réussite, rendu direct avec Twig
+                               $success = true; 
                                 error_log(print_r($_POST, true));
                             } else {
                                 // Gestion de l'échec
@@ -292,6 +303,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                             break;
                                 // D'autres cas pour d'autres actions
                             }
+              // Si une action a été effectuée avec succès, rediriger selon le rôle
+              if ($success) {
+                $role = $session->get('role'); // Assumer que le rôle est stocké dans la session
+                switch ($role) {
+                    case 'admin':
+                        $dashboardData = $page->getDashboardData();
+                        echo $page->render('admin_dashboard.html.twig', $dashboardData);
+                        break;
+                    case 'client':
+                        $dashboardData = $page->getClientDashboardData($session->get('user_id'));
+                        echo $page->render('client_dashboard.html.twig', ['interventions' => $dashboardData]);
+                        break;
+                    case 'intervenant':
+                        $dashboardData = $page->getIntervenantDashboardData($session->get('user_id'));
+                        echo $page->render('intervenant_dashboard.html.twig', $dashboardData);
+                        break;
+                    case 'standardiste':
+                        $dashboardData = $page->getStandardisteDashboardData($session->get('user_id'));
+                        echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
+                        break;
+                    default:
+                        // Redirection vers la page de connexion ou une autre page par défaut
+                       // echo $page->render('index.html.twig');
+                        break;
+                }
+                exit; // Assurez-vous de quitter pour éviter d'exécuter du code supplémentaire inutilement
+            }
+            
 }
 
 // Traitement de l'ajout d'un commentaire
@@ -312,7 +351,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 
 
+// Vérifiez si l'action est 'cancelIntervention'
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'cancelIntervention') {
+    $interventionId = $_POST['intervention_id'] ?? null;
+    $userRole = $session->get('role');
 
+    // Vérifiez ici si l'utilisateur est un standardiste
+    if ($userRole === 'standardiste') {
+        $message = $page->cancelIntervention($interventionId);
+        // Gérer le message de succès ou d'erreur
+        // Par exemple, vous pouvez rediriger vers une page avec le message
+        echo $page->render('message_page.twig', ['message' => $message]);
+    } else {
+        // Gérer le cas où l'utilisateur n'a pas le droit d'annuler l'intervention
+        $message = "Vous n'avez pas les droits nécessaires pour annuler cette intervention.";
+        // Redirection ou affichage du message
+        echo $page->render('error_page.twig', ['message' => $message]);
+    }
+    exit; // Assurez-vous d'arrêter l'exécution du script après la redirection ou l'affichage du message
+}
 
 if (isset($_GET['action']) && $_GET['action'] === 'deleteUser' && isset($_GET['user_id'])) {
     $userId = $_GET['user_id'];
@@ -320,8 +377,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'deleteUser' && isset($_GET['u
     $success = $page->deleteUserById($userId);
     
     if ($success) {
-        // Redirection avec message de succès
-      //  header('Location: index.php?success=User deleted successfully');
+        $dashboardData = $page->getDashboardData();
+        echo $twig->render('admin_dashboard.html.twig', $dashboardData, [
+            'success' => 'Intervention mise à jour'
+        ]);
+        exit;
     } else {
         // Redirection ou affichage d'un message d'erreur
        // header('Location: index.php?error=Error deleting user');
