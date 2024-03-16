@@ -102,15 +102,26 @@ class Page
     // Ajoutez d'autres méthodes au besoin...
 
     // Dans votre classe Page.php
-    public function getClientDashboardData(int $clientId): array
-    {
-        // Assurez-vous que $clientId est passé en paramètre de la fonction
-        $interventionsQuery = "SELECT * FROM Interventions WHERE client_id = :clientId";
+    public function getClientDashboardData(int $clientId): array {
+        // Construisez votre requête SQL pour inclure les informations des tables Status et Urgences
+        $interventionsQuery = "
+            SELECT 
+                Interventions.*, 
+                Status.status AS status_name, 
+                Urgences.urgency_level AS urgency_level_name
+            FROM 
+                Interventions 
+                JOIN Status ON Interventions.ids = Status.ids 
+                JOIN Urgences ON Interventions.idu = Urgences.idu
+            WHERE 
+                Interventions.client_id = :clientId
+        ";
         $stmt = $this->pdo->prepare($interventionsQuery);
         $stmt->bindParam(':clientId', $clientId, \PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+    
     public function getIntervenantDashboardData($intervenantId) {
         $data = [];
       
@@ -133,44 +144,63 @@ class Page
     }
     
 
-    public function getStandardisteDashboardData()
-{
-    $data = [];
-    $interventionsQuery = "SELECT * FROM Interventions";
-    $data['interventions'] = $this->pdo->query($interventionsQuery)->fetchAll(\PDO::FETCH_ASSOC);
-
-    $clientsQuery = "SELECT user_id, username FROM Users WHERE role_id = (SELECT role_id FROM Roles WHERE role_name = 'client')";
-    $clientsStatement = $this->pdo->query($clientsQuery);
-    $clients = [];
-    while ($client = $clientsStatement->fetch(\PDO::FETCH_ASSOC)) {
-        $clients[$client['user_id']] = $client['username'];
+    public function getStandardisteDashboardData($standardisteId) {
+        $data = [];
+        
+        // Récupération des interventions avec indication si elles ont été créées par le standardiste
+        $interventionsQuery = "SELECT 
+            Interventions.*, 
+            Status.status, 
+            Urgences.urgency_level, 
+            GROUP_CONCAT(DISTINCT InterventionIntervenants.intervenant_id SEPARATOR ', ') AS intervenants_ids, 
+            (Interventions.created_by = :standardisteId) AS isCreatedByStandardiste
+        FROM 
+            Interventions 
+        JOIN 
+            Status ON Interventions.ids = Status.ids 
+        JOIN 
+            Urgences ON Interventions.idu = Urgences.idu
+        LEFT JOIN 
+            InterventionIntervenants ON Interventions.intervention_id = InterventionIntervenants.intervention_id 
+        GROUP BY 
+            Interventions.intervention_id;";
+    
+        $stmt = $this->pdo->prepare($interventionsQuery);
+        $stmt->bindParam(':standardisteId', $standardisteId, \PDO::PARAM_INT);
+        $stmt->execute();
+        $data['interventions'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    
+        // Code pour récupérer les autres données (utilisateurs, statuts, urgences, intervenants)
+        // Assurez-vous que ces requêtes sont correctes et n'ont pas besoin d'être modifiées.
+        $data['users'] = $this->pdo->query("SELECT * FROM Users")->fetchAll(\PDO::FETCH_ASSOC);
+        $data['statuses'] = $this->pdo->query("SELECT ids, status FROM Status")->fetchAll(\PDO::FETCH_ASSOC);
+        $data['urgences'] = $this->pdo->query("SELECT idu, urgency_level FROM Urgences")->fetchAll(\PDO::FETCH_ASSOC);
+        $data['intervenants'] = $this->pdo->query("SELECT Users.user_id, Users.username FROM Users JOIN Roles ON Users.role_id = Roles.role_id WHERE Roles.role_name = 'intervenant'")->fetchAll();
+        $data['clients'] = $this->pdo->query("SELECT Users.user_id, Users.username FROM Users JOIN Roles ON Users.role_id = Roles.role_id WHERE Roles.role_name = 'client'")->fetchAll(\PDO::FETCH_ASSOC);
+    
+        return $data;
     }
-    $data['clients'] = $clients;
-
-    $intervenantsQuery = "SELECT user_id, username FROM Users WHERE role_id = (SELECT role_id FROM Roles WHERE role_name = 'intervenant')";
-    $intervenantsStatement = $this->pdo->query($intervenantsQuery);
-    $intervenants = [];
-    while ($intervenant = $intervenantsStatement->fetch(\PDO::FETCH_ASSOC)) {
-        $intervenants[$intervenant['user_id']] = $intervenant['username'];
-    }
-    $data['intervenants'] = $intervenants;
-
-    return $data;
-}
+    
 public function createIntervention(array $interventionData, array $intervenantIds)
 {
     try {
         $this->pdo->beginTransaction();
 
         // Insérer l'intervention
-        $insertQuery = "INSERT INTO Interventions (title, description, client_id, date_planned, ids, urgency_level) VALUES (:title, :description, :client_id, :date_planned, '1', :urgency_level)";
+        $insertQuery = "INSERT INTO Interventions 
+        (title, description, client_id, date_planned, ids, idu) 
+        VALUES 
+        (:title, :description, :client_id, STR_TO_DATE(:date_planned, '%Y-%m-%dT%H:%i'), :status_id, :urgency_level)";
+
         $stmt = $this->pdo->prepare($insertQuery);
         $stmt->execute([
             ':title' => $interventionData['title'],
             ':description' => $interventionData['description'],
             ':client_id' => $interventionData['client_id'],
             ':date_planned' => $interventionData['date_planned'],
-            ':urgency_level' => $interventionData['urgency_level']
+            ':urgency_level' => $interventionData['urgency_level'],
+            ':status_id' => $interventionData['status_id']
+        
         ]);
         $interventionId = $this->pdo->lastInsertId();
 
@@ -273,37 +303,60 @@ public function deleteStatus($statusId) {
     return $stmt->execute([$statusId]);
 }
 public function editInterventionForm($interventionId) {
-    // Logique pour récupérer les données de l'intervention, des statuts, et des urgences
-    $intervention = $this->pdo->query("SELECT * FROM Interventions WHERE intervention_id = $interventionId")->fetch();
+    // Récupère les détails de l'intervention spécifique par son ID.
+    $interventionQuery = "SELECT * FROM Interventions WHERE intervention_id = :interventionId";
+    $stmt = $this->pdo->prepare($interventionQuery);
+    $stmt->execute([':interventionId' => $interventionId]);
+    $intervention = $stmt->fetch();
+
+    // Récupère tous les statuts disponibles dans la base de données.
     $statuses = $this->pdo->query("SELECT * FROM Status")->fetchAll();
+
+    // Récupère toutes les urgences disponibles dans la base de données.
     $urgences = $this->pdo->query("SELECT * FROM Urgences")->fetchAll();
 
-    // Requête pour récupérer tous les utilisateurs ayant le rôle 'intervenant'
+    // Récupère tous les utilisateurs ayant le rôle 'intervenant'.
     $intervenantsQuery = "
         SELECT Users.user_id, Users.username
         FROM Users
         JOIN Roles ON Users.role_id = Roles.role_id
         WHERE Roles.role_name = 'intervenant'";
-    $stmt = $this->pdo->query($intervenantsQuery); // Utilisation de query() car il n'y a pas de paramètres
-    $intervenants = $stmt->fetchAll();
+    $intervenants = $this->pdo->query($intervenantsQuery)->fetchAll();
 
-    // Rendre le template Twig avec les données récupérées
-    return $this->render('edit_intervention.twig', [
+    // Récupère tous les utilisateurs ayant le rôle 'client'.
+    $clientsQuery = "
+        SELECT Users.user_id, Users.username
+        FROM Users
+        JOIN Roles ON Users.role_id = Roles.role_id
+        WHERE Roles.role_name = 'client'";
+    $clients = $this->pdo->query($clientsQuery)->fetchAll();
+
+    // Prépare les données à passer au template Twig.
+    $templateData = [
         'intervention' => $intervention,
         'statuses' => $statuses,
         'urgences' => $urgences,
-        'intervenants' => $intervenants // Passer les intervenants au template
-    ]);
+        'intervenants' => $intervenants,
+        'clients' => $clients // Ajout des clients au template
+    ];
+
+    // Rend le template Twig avec les données récupérées.
+    return $this->render('edit_intervention.twig', $templateData);
 }
-public function postComment($interventionId, $userId, $content) {
+
+public function addComment($interventionId, $userId, $content) {
     $stmt = $this->pdo->prepare("INSERT INTO Comments (intervention_id, user_id, content) VALUES (?, ?, ?)");
-    return $stmt->execute([$interventionId, $userId, $content]);
+    $result = $stmt->execute([$interventionId, $userId, $content]);
+    return $result; // True si le commentaire est ajouté, sinon false
 }
+
+
 public function getCommentsByInterventionId($interventionId) {
-    $stmt = $this->pdo->prepare("SELECT * FROM Comments WHERE intervention_id = ?");
+    $stmt = $this->pdo->prepare("SELECT * FROM Comments WHERE intervention_id = ? ORDER BY created_at DESC");
     $stmt->execute([$interventionId]);
-    return $stmt->fetchAll();
+    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 }
+
 public function addUrgence($urgenceLevel) {
     // La requête SQL insère maintenant dans la colonne `urgency_level`
     $stmt = $this->pdo->prepare("INSERT INTO urgences (urgency_level) VALUES (?)");
@@ -362,7 +415,40 @@ public function deleteUserById($userId) {
         return false;
     }
 }
+public function cancelIntervention($interventionId) {
+    // Identifier l'ID du statut 'Annulée' dans la table Status
+    $statusQuery = "SELECT ids FROM Status WHERE status = :statusName";
+    $cancelStatusName = 'Annulée'; // Assurez-vous que ce statut existe dans votre table Status
 
+    try {
+        // Récupérer l'ID du statut 'Annulée'
+        $statusStmt = $this->pdo->prepare($statusQuery);
+        $statusStmt->bindParam(':statusName', $cancelStatusName);
+        $statusStmt->execute();
+        $statusResult = $statusStmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($statusResult) {
+            $cancelStatusId = $statusResult['ids'];
+
+            // Mettre à jour le statut de l'intervention
+            $updateQuery = "UPDATE Interventions SET ids = :statusId WHERE intervention_id = :interventionId";
+            $updateStmt = $this->pdo->prepare($updateQuery);
+            $updateStmt->bindParam(':statusId', $cancelStatusId, \PDO::PARAM_INT);
+            $updateStmt->bindParam(':interventionId', $interventionId, \PDO::PARAM_INT);
+            $updateStmt->execute();
+
+            if ($updateStmt->rowCount() > 0) {
+                return "L'intervention a été annulée avec succès.";
+            } else {
+                return "Aucune intervention trouvée avec cet ID ou l'intervention est déjà annulée.";
+            }
+        } else {
+            return "Statut 'Annulée' introuvable dans la base de données.";
+        }
+    } catch (\PDOException $e) {
+        return "Erreur lors de l'annulation de l'intervention: " . $e->getMessage();
+    }
+}
 
 
 }
