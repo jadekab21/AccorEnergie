@@ -15,18 +15,25 @@ class Session
     $_SESSION[$key]=$data;}
 
     
-    public function get(string $key){
-        return $_SESSION[$key];
+    public function get(string $key) {
+        return isset($_SESSION[$key]) ? $_SESSION[$key] : null;
     }
+    
         public function isConnected(){
         return isset ($_SESSION['user']);
     }
     public function asRole($role){
         return $_SESSION['user']['role']== $role ? true : false;
     }
-    public function destroy()
+    public function logout()
     {
         unset($_SESSION);
         session_destroy();
+        header('Location: index.php');
     }
+    public function startUserSession($userId, $role) {
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['role'] = $role;
+    }
+
 }
