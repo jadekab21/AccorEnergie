@@ -3,26 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>Tableau de Bord Admin - AccordEnergie</title>
-    <link rel="stylesheet" href="/css/admin_css">
+    <link rel="stylesheet" href="/css/adminnn_css">
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.5.1/gsap.min.js"></script>
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
     <style>
-        section {
+        section, #creerIntervention  {
             display: none;
         }
     </style>
 </head>
 <body>
+   
+   <div class="container">
     <h1>Tableau de Bord Admin</h1>
-    
+    </div>
+    <div id="large-header" class="large-header">
+  <canvas id="demo-canvas"></canvas>
+  <h1 class="main-title">Accord<span class="thin">Énergie</span></h1>
+</div>
     <div class="navigation">
     <button id="btnGestionInterventions">Gestion des Interventions</button>
     <button id="btnGestionUtilisateurs">Gestion des Utilisateurs</button>
     <button id="btnGestionStatus">Gestion des Status</button>
     <button id="btnGestionUrgences">Gestion des Urgences</button>
+    
 </div>
 
 
     <section id="gestionInterventions">
         <h2>Gestion des Interventions</h2>
+         <button id="btnCreerIntervention">Créer une Nouvelle Intervention</button>
         <table border="1">
             <thead>
                 <tr>
@@ -37,21 +48,25 @@
                 </tr>
             </thead>
             <tbody>
-             {% for intervention in interventions %}
+            {% for intervention in interventions %}
 <tr>
-    <td>{{ intervention.title }}</td>
+   <td>{{ intervention.title }}</td>
     <td>{{ intervention.description }}</td>
-    <td>{{ intervention.client_id }}</td>
-    <td>{{ intervention.intervenants_ids }}</td> 
+    <td>{{ intervention.client_name }}</td>
+    <td>{{ intervention.intervenants_names }}</td>
     <td>{{ intervention.status }}</td>
     <td>{{ intervention.urgency_level }}</td>
     <td>{{ intervention.date_planned }}</td>
     <td>
-        <a href="index.php?action=editIntervention&id={{ intervention.intervention_id }}">Edit</a>
+        <form action="index.php" method="get">
+    <input type="hidden" name="action" value="editInterventionForm">
+    <input type="hidden" name="intervention_id" value="{{ intervention.intervention_id }}">
+    <button class="btn type="submit">Edit</button>
+</form>
         <form action="index.php" method="POST">
             <input type="hidden" name="action" value="deleteIntervention">
             <input type="hidden" name="intervention_id" value="{{ intervention.intervention_id }}">
-            <button type="submit">Delete</button>
+            <button class="btn type="submit">Delete</button>
         </form>
         <a href="javascript:void(0)" onclick="addComment({{ intervention.intervention_id }})">Commenter</a>
         <a href="javascript:void(0)" onclick="showComments({{ intervention.intervention_id }})">Afficher les commentaires</a>
@@ -59,19 +74,38 @@
 </tr>
 <div id="comments-container-{{ intervention.intervention_id }}" style="display:none;">
     <h3>Commentaires</h3>
-    <ul id="comments-list-{{ intervention.intervention_id }}"></ul>
+    <ul id="comments-list-{{ intervention.intervention_id }}" style="background-color: #ffffff;"></ul>
 </div>
 {% endfor %}
 
 
 
 
+
             </tbody>
         </table>
+        
     </section>
 
     <section id="gestionUtilisateurs">
         <h2>Gestion des Utilisateurs</h2>
+          <button id="btnAjouterUtilisateur">Ajouter un nouvel utilisateur</button>
+    <div id="formAjouterUtilisateur" style="display:none;">
+        <form action="index.php" method="post">
+            <input type="hidden" name="action" value="registerUser">
+            <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Mot de passe" required>
+            <select name="role_id" required>
+                <option value="">Sélectionnez un rôle</option>
+                <!-- Supposons que vous avez les rôles disponibles comme suit -->
+                <option value="1">Admin</option>
+                <option value="2">Intervenant</option>
+                <option value="3">Client</option>
+            </select>
+            <button type="submit">Créer Utilisateur</button>
+        </form>
+    </div>
         <table border="1">
             <thead>
                 <tr>
@@ -86,10 +120,19 @@
                 <tr>
                     <td>{{ user.username }}</td>
                     <td>{{ user.email }}</td>
-                    <td>{{ user.role_id }}</td>
+                    <td>{{ user.role_name }}</td>
                     <td>
-                        <a href="/classes/edit_user.php?id={{ user.user_id }}">Edit</a>
-                        <a href="/classes/delete_user.php?id={{ user.user_id }}">Delete</a>
+                       <form action="index.php" method="get">
+    <input type="hidden" name="action" value="editUserForm">
+    <input type="hidden" name="user_id" value="{{ user.user_id }}">
+    <button type="submit">Edit</button>
+</form>
+
+                        <form action="index.php" method="get">
+    <input type="hidden" name="action" value="deleteUser">
+    <input type="hidden" name="user_id" value="{{ user.user_id }}">
+    <button type="submit">Delete</button>
+</form>
                     </td>
                 </tr>
                 {% endfor %}
@@ -189,17 +232,84 @@
     </table>
 </section>
 
-    <footer>
-        <p>Tableau de bord admin pour la gestion d'AccordEnergie.</p>
-    </footer>
+    <section id="creerIntervention">
+        <h2>Créer une Nouvelle Intervention</h2>
+        <form action="index.php" method="post">
+        <input type="hidden" name="action" value="create_intervention">
+            <input type="text" name="title" placeholder="Titre de l'intervention" required>
+            <textarea name="description" placeholder="Description de l'intervention" required></textarea>
+            <label for="client_id">Client:</label>
+<select name="client_id" id="client_id" required>
+    <option value="">Sélectionnez un client</option>
+    {% for client in clients %}
+        <option value="{{ client.user_id }}">{{ client.username }}</option>
+    {% endfor %}
+</select>
+  <label for="status">Statut:</label>
+<select id="status" name="status" required>
+    {% for status in statuses %}
+        <option value="{{ status.ids }}">{{ status.status }}</option>
+    {% endfor %}
+</select>
+          
+          <!-- Dropdown pour sélectionner les intervenants -->
+<label for="intervenant_ids">Intervenants :</label>
+<select name="intervenant_ids[]" id="intervenant_ids" multiple required>
+    <option value="">Sélectionnez les intervenants</option>
+    {% for intervenant in intervenants %}
+     
+        <option value="{{ intervenant.user_id }}" {% if intervenant.user_id in intervention.intervenants_ids %} selected {% endif %}>
+            {{ intervenant.username }}
+        </option>
+    {% endfor %}
+</select>
+
+ <!-- Dropdown pour sélectionner le niveau d'urgence -->
+<label for="urgency_level">Niveau d'urgence :</label>
+<select id="urgency_level" name="urgency_level" required>
+    {% for urgence in urgences %}
+        <!-- L'option est sélectionnée si elle correspond à l'urgence de l'intervention -->
+        <option value="{{ urgence.idu }}" {% if urgence.idu == intervention.idu %}selected{% endif %}>
+            {{ urgence.urgency_level }}
+        </option>
+    {% endfor %}
+</select>
+            <input type="datetime-local" name="date_planned" placeholder="Date et heure planifiées" required>
+            <button type="submit">Créer</button>
+        </form>
+    </section>
 
     <script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('th').forEach(headerCell => {
+        headerCell.addEventListener('click', () => {
+            const tableElement = headerCell.parentElement.parentElement.parentElement;
+            const headerIndex = Array.prototype.indexOf.call(headerCell.parentElement.children, headerCell);
+            const isAscending = headerCell.classList.contains('asc');
+            const directionModifier = isAscending ? 1 : -1;
+            headerCell.classList.toggle('asc', !isAscending);
+            headerCell.classList.toggle('desc', isAscending);
+            const rows = Array.from(tableElement.querySelectorAll('tbody > tr'));
+            rows.sort((a, b) => {
+                const aText = a.children[headerIndex].textContent.trim();
+                const bText = b.children[headerIndex].textContent.trim();
+                return aText.localeCompare(bText) * directionModifier;
+            });
+            while (tableElement.querySelector('tbody').firstChild) {
+                tableElement.querySelector('tbody').removeChild(tableElement.querySelector('tbody').firstChild);
+            }
+            tableElement.querySelector('tbody').append(...rows);
+        });
+    });
+});
+
         document.addEventListener("DOMContentLoaded", function() {
     var btnGestionInterventions = document.getElementById('btnGestionInterventions');
     var btnGestionUtilisateurs = document.getElementById('btnGestionUtilisateurs');
     var btnGestionStatus = document.getElementById('btnGestionStatus');
     var btnGestionUrgences = document.getElementById('btnGestionUrgences');
-    
+     var btnCreerIntervention = document.getElementById('btnCreerIntervention');
+        var sectionCreerIntervention = document.getElementById('creerIntervention');
     var sectionGestionInterventions = document.getElementById('gestionInterventions');
     var sectionGestionUtilisateurs = document.getElementById('gestionUtilisateurs');
     var sectionGestionStatus = document.getElementById('gestionStatus');
@@ -215,8 +325,12 @@
         formAjouterUrgence.style.display = 'block';
     });
 
+ btnCreerIntervention.addEventListener('click', function() {
+                sectionCreerIntervention.style.display = 'block';
+            });
     btnAjouterStatus.addEventListener('click', function() {
         formAjouterStatus.style.display = 'block';
+        sectionCreerIntervention.style.display = 'block';
     });
 
     btnGestionInterventions.addEventListener('click', function() {
@@ -252,51 +366,247 @@ function addComment(interventionId) {
     if (commentContent) {
         fetch('index.php', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
             body: `action=postComment&intervention_id=${interventionId}&content=${encodeURIComponent(commentContent)}`
         })
-        .then(response => response.json()) // Expect a JSON response
+        .then(response => response.json())
         .then(data => {
             if(data.success) {
-                alert("Commentaire ajouté avec succès");
-                showComments(interventionId);
+                alert(data.message);
+                showComments(interventionId); // Actualiser la liste des commentaires
             } else {
-                alert("Erreur lors de l'ajout du commentaire");
+                alert(data.message);
             }
         })
         .catch(error => console.error('Erreur:', error));
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('btnAjouterUtilisateur').addEventListener('click', function() {
+        var form = document.getElementById('formAjouterUtilisateur');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    });
+});
 
 function showComments(interventionId) {
     fetch(`index.php?action=getComments&interventionId=${interventionId}`)
     .then(response => response.json())
     .then(data => {
         const commentsList = document.getElementById(`comments-list-${interventionId}`);
-        if (!commentsList) {
-            console.error('Élément de liste de commentaires introuvable:', `comments-list-${interventionId}`);
-            return;
-        }
-        commentsList.innerHTML = '';
+        commentsList.innerHTML = ''; // Efface les commentaires existants
         data.forEach(comment => {
             const li = document.createElement('li');
-            li.textContent = comment.content;
+            // Ajoute le nom d'utilisateur à côté du contenu du commentaire
+            li.textContent = `${comment.username}: ${comment.content}`; 
             commentsList.appendChild(li);
         });
         const commentsContainer = document.getElementById(`comments-container-${interventionId}`);
-        if (!commentsContainer) {
-            console.error('Conteneur de commentaires introuvable:', `comments-container-${interventionId}`);
-            return;
-        }
         commentsContainer.style.display = 'block';
     })
     .catch(error => console.error('Erreur:', error));
 }
 
+
+(function() {
+
+    var width, height, largeHeader, canvas, ctx, points, target, animateHeader = true;
+
+    // Main
+    initHeader();
+    initAnimation();
+    addListeners();
+
+    function initHeader() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        target = {x: width/2, y: height/2};
+
+        largeHeader = document.getElementById('large-header');
+        largeHeader.style.height = height+'px';
+
+        canvas = document.getElementById('demo-canvas');
+        canvas.width = width;
+        canvas.height = height;
+        ctx = canvas.getContext('2d');
+
+        // create points
+        points = [];
+        for(var x = 0; x < width; x = x + width/20) {
+            for(var y = 0; y < height; y = y + height/20) {
+                var px = x + Math.random()*width/20;
+                var py = y + Math.random()*height/20;
+                var p = {x: px, originX: px, y: py, originY: py };
+                points.push(p);
+            }
+        }
+
+        // for each point find the 5 closest points
+        for(var i = 0; i < points.length; i++) {
+            var closest = [];
+            var p1 = points[i];
+            for(var j = 0; j < points.length; j++) {
+                var p2 = points[j]
+                if(!(p1 == p2)) {
+                    var placed = false;
+                    for(var k = 0; k < 5; k++) {
+                        if(!placed) {
+                            if(closest[k] == undefined) {
+                                closest[k] = p2;
+                                placed = true;
+                            }
+                        }
+                    }
+
+                    for(var k = 0; k < 5; k++) {
+                        if(!placed) {
+                            if(getDistance(p1, p2) < getDistance(p1, closest[k])) {
+                                closest[k] = p2;
+                                placed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            p1.closest = closest;
+        }
+
+        // assign a circle to each point
+        for(var i in points) {
+            var c = new Circle(points[i], 2+Math.random()*2, 'rgba(255,255,255,0.3)');
+            points[i].circle = c;
+        }
+    }
+
+    // Event handling
+    function addListeners() {
+        if(!('ontouchstart' in window)) {
+            window.addEventListener('mousemove', mouseMove);
+        }
+        window.addEventListener('scroll', scrollCheck);
+        window.addEventListener('resize', resize);
+    }
+
+    function mouseMove(e) {
+        var posx = posy = 0;
+        if (e.pageX || e.pageY) {
+            posx = e.pageX;
+            posy = e.pageY;
+        }
+        else if (e.clientX || e.clientY)    {
+            posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+            posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+        }
+        target.x = posx;
+        target.y = posy;
+    }
+
+    function scrollCheck() {
+        if(document.body.scrollTop > height) animateHeader = false;
+        else animateHeader = true;
+    }
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        largeHeader.style.height = height+'px';
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    // animation
+    function initAnimation() {
+        animate();
+        for(var i in points) {
+            shiftPoint(points[i]);
+        }
+    }
+
+    function animate() {
+        if(animateHeader) {
+            ctx.clearRect(0,0,width,height);
+            for(var i in points) {
+                // detect points in range
+                if(Math.abs(getDistance(target, points[i])) < 4000) {
+                    points[i].active = 0.3;
+                    points[i].circle.active = 0.6;
+                } else if(Math.abs(getDistance(target, points[i])) < 20000) {
+                    points[i].active = 0.1;
+                    points[i].circle.active = 0.3;
+                } else if(Math.abs(getDistance(target, points[i])) < 40000) {
+                    points[i].active = 0.02;
+                    points[i].circle.active = 0.1;
+                } else {
+                    points[i].active = 0;
+                    points[i].circle.active = 0;
+                }
+
+                drawLines(points[i]);
+                points[i].circle.draw();
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+
+    function shiftPoint(p) {
+        TweenLite.to(p, 1+1*Math.random(), {x:p.originX-50+Math.random()*100,
+            y: p.originY-50+Math.random()*100, ease:Circ.easeInOut,
+            onComplete: function() {
+                shiftPoint(p);
+            }});
+    }
+
+    // Canvas manipulation
+    function drawLines(p) {
+        if(!p.active) return;
+        for(var i in p.closest) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.closest[i].x, p.closest[i].y);
+            ctx.strokeStyle = 'rgba(156,217,249,'+ p.active+')';
+            ctx.stroke();
+        }
+    }
+
+    function Circle(pos,rad,color) {
+        var _this = this;
+
+        // constructor
+        (function() {
+            _this.pos = pos || null;
+            _this.radius = rad || null;
+            _this.color = color || null;
+        })();
+
+        this.draw = function() {
+            if(!_this.active) return;
+            ctx.beginPath();
+            ctx.arc(_this.pos.x, _this.pos.y, _this.radius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'rgba(156,217,249,'+ _this.active+')';
+            ctx.fill();
+        };
+    }
+
+    // Util
+    function getDistance(p1, p2) {
+        return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
+    }
+    
+})();
+
     </script>
     {# Ajoutez ceci dans votre template là où vous voulez afficher le lien de déconnexion #}
-<a href="?action=logout">Déconnexion</a>
+<div class="logout-button">
+    <form action="index.php" method="GET">
+        <input type="hidden" name="action" value="logout">
+        <button type="submit"><i class="fas fa-power-off"></i> Déconnexion</button>
+    </form>
+</div>
 
+ <footer>
+        Copyright &copy; AccordEnergie 2024 by ECE student
+    </footer>
 </body>
 </html>
