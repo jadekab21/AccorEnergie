@@ -24,40 +24,6 @@ $twig = new \Twig\Environment($loader);
 
 $requestUri = $_SERVER['REQUEST_URI'];
 
-
-// Vérification de la demande de suppression
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'deleteIntervention') {
-    $interventionId = (int) $_POST['intervention_id'];
-
-    // Appel de la méthode de suppression
-    $result = $page->deleteIntervention($interventionId);
-
-    // Gestion de la réponse
-    if ($result) {
-        // Redirection vers une page de succès ou de dashboard avec un message de succès
-        header('Location: admin_dashboard.php?success=Intervention supprimée avec succès');
-    } else {
-        // Redirection vers une page d'erreur ou retour au dashboard avec un message d'erreur
-        header('Location: admin_dashboard.php?error=Erreur lors de la suppression de l\'intervention');
-    }
-    exit;
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'create_intervention') {
-    $interventionData = [
-        'title' => $_POST['title'],
-        'description' => $_POST['description'],
-        'client_id' => $_POST['client_id'],
-        'urgency_level' => $_POST['urgency_level'],
-        'date_planned' => $_POST['date_planned'],
-        'status_id' => $_POST['status']
-    ];
-    $intervenantIds = $_POST['intervenant_ids']; // Assurez-vous que c'est un tableau
-
-    $message = $page->createIntervention($interventionData, $intervenantIds);
-    echo $twig->render('message.twig', ['message' => $message]);
-    exit;
-}
 $errorMessage = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['form_type']) && $_POST['form_type'] == 'submit') {
@@ -121,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $createResult = $page->createStatus($status);
 
         if ($createResult) {
-            // Redirection vers la page de gestion des statuts avec un message de succès
+          
            echo ('status ajouté');
         } else {
             // Gestion de l'erreur
@@ -185,6 +151,59 @@ if (isset($_GET['action']) && $_GET['action'] === 'editUserForm' && isset($_GET[
     exit;
 }
 
+if (isset($_POST['action']) && $_POST['action'] === 'registerUser') {
+    // Hachage du mot de passe
+    $hashedPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    
+    // Préparation des données à passer
+    $postData = [
+        'username' => $_POST['username'],
+        'email' => $_POST['email'],
+        'password' => $hashedPassword, // Utilisation du mot de passe haché
+        'role_id' => $_POST['role_id'],
+    ];
+    
+    // Appel de la fonction avec les données, y compris le mot de passe haché
+    $result = $page->registerUser($postData);
+
+    if ($result) {
+        // L'enregistrement est réussi, redirection en fonction du rôle
+        switch ($session->get('role')) {
+            case 'admin':
+                $dashboardData = $page->getDashboardData();
+                echo $page->render('admin_dashboard.html.twig', $dashboardData);
+                break;
+            case 'client':
+                $clientId = $session->get('user_id');
+                $dashboardData = $page->getClientDashboardData($clientId);
+
+                // Rendez le template pour le tableau de bord client avec les données récupérées
+                echo $page->render('client_dashboard.html.twig', ['interventions' => $dashboardData]);
+                break;
+            case 'intervenant':
+                $intervenantId = $_SESSION['user_id'];
+    $dashboardData = $page->getIntervenantDashboardData($intervenantId);
+    echo $page->render('intervenant_dashboard.html.twig', $dashboardData);
+                break;
+                case 'standardiste':
+                    // Supposons que vous stockez l'ID de l'utilisateur connecté dans la session sous la clé 'user_id'.
+                    $standardisteId = $session->get('user_id'); // Assurez-vous d'avoir la bonne clé pour l'ID de l'utilisateur.
+                
+                    // Appeler la fonction en passant l'ID du standardiste.
+                    $dashboardData = $page->getStandardisteDashboardData($standardisteId);
+                
+                    // Rendre le tableau de bord du standardiste avec les données récupérées.
+                    echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
+                    break;
+                
+            default:
+                require 'public/error_page.php';
+                break;
+        }
+    
+}
+}
+
 
 // Vérification de la déconnexion
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
@@ -219,6 +238,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                 die('Données du formulaire non valides.');
             }
             break;
+            case 'deleteIntervention': 
+                $interventionId = (int) $_POST['intervention_id'];
+
+                // Appel de la méthode de suppression
+                $result = $page->deleteIntervention($interventionId);
+                if($result){
+                    $success = true; 
+                }            
             case 'deleteUrgence':
                 if (isset($_POST['id'])) {
                     $idu = $_POST['id'];
@@ -270,6 +297,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                            // header('Location: user_management.php?error=Missing data for updating');
                         }
                         break;
+                        case 'create_intervention' :
+                            $interventionData = [
+                                'title' => $_POST['title'],
+                                'description' => $_POST['description'],
+                                'client_id' => $_POST['client_id'],
+                                'urgency_level' => $_POST['urgency_level'],
+                                'date_planned' => $_POST['date_planned'],
+                                'status_id' => $_POST['status']
+                            ];
+                            $intervenantIds = $_POST['intervenant_ids']; // Assurez-vous que c'est un tableau
+                        
+                            $result = $page->createIntervention($interventionData, $intervenantIds);
+                            if ($result) {
+                               $success = true; 
+                                error_log(print_r($_POST, true));
+                            }
+                            break;
                         case'editIntervention': 
                             $interventionId = $_POST['interventionId'];
                             $title = $_POST['title'];
@@ -301,6 +345,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                                 error_log(print_r($_POST, true));
                             }
                             break;
+                            case 'cancel_intervention': 
+                                $interventionId = $_POST['intervention_id'] ?? null;
+                                $userRole = $session->get('role');
+                            
+                                // Vérifiez ici si l'utilisateur est un standardiste
+                                if ($userRole === 'standardiste') {
+                                    $message = $page->cancelIntervention($interventionId);
+                                    // Gérer le message de succès ou d'erreur
+                                    // Par exemple, vous pouvez rediriger vers une page avec le message
+                                    echo $page->render('message_page.twig', ['message' => $message]);
+                                } else {
+                                    // Gérer le cas où l'utilisateur n'a pas le droit d'annuler l'intervention
+                                    $message = "Vous n'avez pas les droits nécessaires pour annuler cette intervention.";
+                                    // Redirection ou affichage du message
+                                    echo $page->render('error_page.twig', ['message' => $message]);
+                                }
+                                exit;
+                                break;
                                 // D'autres cas pour d'autres actions
                             }
               // Si une action a été effectuée avec succès, rediriger selon le rôle
@@ -342,9 +404,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $result = $page->addComment($interventionId, $userId, $content);
 
     if ($result) {
-        echo json_encode(['success' => true, 'message' => 'Commentaire ajouté avec succès']);
+        $dashboardData = $page->getStandardisteDashboardData($session->get('user_id'));
+        echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'ajout du commentaire']);
+      //  echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'ajout du commentaire']);
     }
     exit;
 }
@@ -361,7 +424,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $message = $page->cancelIntervention($interventionId);
         // Gérer le message de succès ou d'erreur
         // Par exemple, vous pouvez rediriger vers une page avec le message
-        echo $page->render('message_page.twig', ['message' => $message]);
+        $dashboardData = $page->getStandardisteDashboardData($session->get('user_id'));
+                        echo $page->render('standardiste_dashboard.html.twig', $dashboardData);
     } else {
         // Gérer le cas où l'utilisateur n'a pas le droit d'annuler l'intervention
         $message = "Vous n'avez pas les droits nécessaires pour annuler cette intervention.";
@@ -388,6 +452,27 @@ if (isset($_GET['action']) && $_GET['action'] === 'deleteUser' && isset($_GET['u
     }
     exit;
 }
+
+if (isset($_GET['action']) && $_GET['action'] === 'editStatusIntervention') {
+    if (isset($_GET['intervention_id']) && isset($_GET['new_status_id'])) {
+       
+        $interventionId = $_GET['intervention_id'];
+        $newStatusId = $_GET['new_status_id'];
+
+        // Supposons que $pdo est passé à l'objet $page
+        if ($page->editStatusIntervention($interventionId, $newStatusId)) {
+            $dashboardData = $page->getIntervenantDashboardData($session->get('user_id'));
+            echo $page->render('intervenant_dashboard.html.twig', $dashboardData);
+            exit;
+        } 
+           
+        
+    } else {
+        echo "Données manquantes pour modifier le statut de l'intervention.";
+    }
+}
+
+
 
 echo $twig->render('index.html.twig', ['error' => $errorMessage]);
 
