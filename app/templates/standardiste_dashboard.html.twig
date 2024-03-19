@@ -25,7 +25,7 @@
     </div>
      <section id="interventionsCrees">
         <h2>Interventions : </h2>
-        <table border="1">
+        <table id="tableGestionInterventions" border="1">
             <thead>
                 <tr>
                     <th>Titre</th>
@@ -70,9 +70,16 @@
     <!-- Possiblement afficher un bouton ou un lien pour voir plus de détails, sans les options de modification/suppression -->
     Vous ne pouvez pas modifier cette intervention car elle a été crée par un autre 
 {% endif %}
-
-                    </td>
+<br>
+            <a href="javascript:void(0)" onclick="addComment({{ intervention.intervention_id }})">Commenter</a>
+            <br> 
+        <a href="javascript:void(0)" onclick="showComments({{ intervention.intervention_id }})">Afficher les commentaires</a>
+</td>
                 </tr>
+                <div id="comments-container-{{ intervention.intervention_id }}" style="display:none;">
+    <h3>Commentaires</h3>
+    <ul id="comments-list-{{ intervention.intervention_id }}" style="background-color: #ffffff;"></ul>
+</div>
                 {% endfor %}
             </tbody>
         </table>
@@ -126,6 +133,83 @@
     </section>
 
     <script>
+    function addComment(interventionId) {
+    var commentContent = prompt("Entrez votre commentaire :");
+    if (commentContent) {
+        fetch('index.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=postComment&intervention_id=${interventionId}&content=${encodeURIComponent(commentContent)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                alert(data.message);
+                showComments(interventionId); // Actualiser la liste des commentaires
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    // Attachez cet écouteur d'événements à chaque tableau que vous souhaitez trier
+    var tableGestionInterventions = document.querySelector('#tableGestionInterventions thead');
+    tableGestionInterventions.addEventListener('click', function(e) {
+        var th = e.target;
+        var thIndex = th.cellIndex;
+        var shouldSortAscending = !th.classList.contains('asc');
+        sortTableByColumn(document.querySelector('#tableGestionInterventions'), thIndex, shouldSortAscending);
+    });
+});
+
+function sortTableByColumn(table, column, asc = true) {
+    const dirModifier = asc ? 1 : -1;
+    const tBody = table.tBodies[0];
+    const rows = Array.from(tBody.querySelectorAll('tr'));
+
+    // Sort each row
+    const sortedRows = rows.sort((a, b) => {
+        const aColText = a.querySelector(`td:nth-child(${ column + 1 })`).textContent.trim();
+        const bColText = b.querySelector(`td:nth-child(${ column + 1 })`).textContent.trim();
+        
+        return aColText > bColText ? (1 * dirModifier) : (-1 * dirModifier);
+    });
+
+    // Remove all existing TRs from the table
+    while (tBody.firstChild) {
+        tBody.removeChild(tBody.firstChild);
+    }
+
+    // Re-add the newly sorted rows
+    tBody.append(...sortedRows);
+
+    // Remember how the column is currently sorted
+    table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
+    table.querySelector(`th:nth-child(${ column + 1 })`).classList.toggle('asc', asc);
+    table.querySelector(`th:nth-child(${ column + 1 })`).classList.toggle('desc', !asc);
+}
+
+function showComments(interventionId) {
+    fetch(`index.php?action=getComments&interventionId=${interventionId}`)
+    .then(response => response.json())
+    .then(data => {
+        const commentsList = document.getElementById(`comments-list-${interventionId}`);
+        commentsList.innerHTML = ''; // Efface les commentaires existants
+        data.forEach(comment => {
+            const li = document.createElement('li');
+            // Ajoute le nom d'utilisateur à côté du contenu du commentaire
+            li.textContent = `${comment.username}: ${comment.content}`; 
+            commentsList.appendChild(li);
+        });
+        const commentsContainer = document.getElementById(`comments-container-${interventionId}`);
+        commentsContainer.style.display = 'block';
+    })
+    .catch(error => console.error('Erreur:', error));
+}
         document.addEventListener("DOMContentLoaded", function() {
             var btnInterventionsCrees = document.getElementById('btnInterventionsCrees');
             var btnCreerIntervention = document.getElementById('btnCreerIntervention');
