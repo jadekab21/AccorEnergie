@@ -67,7 +67,6 @@
         <button type="submit">Annuler l'intervention</button>
     </form>
 {% else %}
-    <!-- Possiblement afficher un bouton ou un lien pour voir plus de détails, sans les options de modification/suppression -->
     Vous ne pouvez pas modifier cette intervention car elle a été crée par un autre 
 {% endif %}
 <br>
@@ -156,7 +155,6 @@
     }
 }
 document.addEventListener('DOMContentLoaded', function() {
-    // Attachez cet écouteur d'événements à chaque tableau que vous souhaitez trier
     var tableGestionInterventions = document.querySelector('#tableGestionInterventions thead');
     tableGestionInterventions.addEventListener('click', function(e) {
         var th = e.target;
@@ -201,7 +199,6 @@ function showComments(interventionId) {
         commentsList.innerHTML = ''; // Efface les commentaires existants
         data.forEach(comment => {
             const li = document.createElement('li');
-            // Ajoute le nom d'utilisateur à côté du contenu du commentaire
             li.textContent = `${comment.username}: ${comment.content}`; 
             commentsList.appendChild(li);
         });
