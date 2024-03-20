@@ -30,7 +30,7 @@ class Page
     $email = $postData['email'];
     $password = password_hash($postData['password'], PASSWORD_DEFAULT);
 
-    // Requête pour obtenir l'ID du rôle 'client'
+    // Requête pour obtenir l'ID de 'client'
     $roleQuery = "SELECT role_id FROM Roles WHERE role_name = 'client'";
     $stmt = $this->pdo->prepare($roleQuery);
     $stmt->execute();
@@ -54,7 +54,6 @@ class Page
         }
     }
     
-    // Il est recommandé de gérer l'affichage des messages et la redirection via une approche plus centralisée
     return $this->render('index.html.twig', ['message' => $message]);
 }
 
@@ -87,7 +86,7 @@ class Page
         $data['statuses'] = $this->pdo->query("SELECT ids, status FROM Status")->fetchAll(\PDO::FETCH_ASSOC);
         $data['urgences'] = $this->pdo->query("SELECT idu, urgency_level FROM Urgences")->fetchAll(\PDO::FETCH_ASSOC);
         
-        // Requête pour récupérer tous les utilisateurs ayant le rôle 'intervenant'
+        // Récuperation de tous les utilisateurs ayant le rôle 'intervenant'
         $intervenantsQuery = "
         SELECT Users.user_id, Users.username
         FROM Users
@@ -97,13 +96,7 @@ class Page
     
         return $data;
     }
-    
-
-    // Ajoutez d'autres méthodes au besoin...
-
-    // Dans votre classe Page.php
     public function getClientDashboardData(int $clientId): array {
-        // Construisez votre requête SQL pour inclure les informations des tables Status et Urgences
         $interventionsQuery = "
             SELECT 
                 Interventions.*, 
@@ -147,7 +140,6 @@ class Page
     public function getStandardisteDashboardData($standardisteId) {
         $data = [];
         
-        // Récupération des interventions avec indication si elles ont été créées par le standardiste
         $interventionsQuery = "SELECT 
             Interventions.*, 
             Status.status, 
@@ -170,8 +162,6 @@ class Page
         $stmt->execute();
         $data['interventions'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
     
-        // Code pour récupérer les autres données (utilisateurs, statuts, urgences, intervenants)
-        // Assurez-vous que ces requêtes sont correctes et n'ont pas besoin d'être modifiées.
         $data['users'] = $this->pdo->query("SELECT * FROM Users")->fetchAll(\PDO::FETCH_ASSOC);
         $data['statuses'] = $this->pdo->query("SELECT ids, status FROM Status")->fetchAll(\PDO::FETCH_ASSOC);
         $data['urgences'] = $this->pdo->query("SELECT idu, urgency_level FROM Urgences")->fetchAll(\PDO::FETCH_ASSOC);
@@ -395,7 +385,6 @@ public function deleteUserById($userId) {
         $stmt->execute([$userId]);
 
         // Mettre à jour ou supprimer les interventions liées à l'utilisateur
-        // Exemple: Définir client_id à NULL ou à un autre utilisateur
         // Pour cet exemple, nous allons simplement définir client_id à NULL
         $stmt = $this->pdo->prepare("UPDATE interventions SET client_id = NULL WHERE client_id = ?");
         $stmt->execute([$userId]);
