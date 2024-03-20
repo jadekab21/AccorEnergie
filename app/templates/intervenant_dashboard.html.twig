@@ -126,8 +126,7 @@ function showComments(interventionId) {
         })
         .then(comments => {
             console.log('Réponse JSON des commentaires:', comments);
-            alert(JSON.stringify(comments)); // Exemple simple pour afficher les commentaires
-            // Ici, vous pouvez mettre à jour le DOM pour afficher les commentaires
+            alert(JSON.stringify(comments));
         })
         .catch(error => console.error('Erreur:', error));
 }
